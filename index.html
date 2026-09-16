@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatEng Pro: เรียนรู้วัสดุวิศวกรรมฉบับนักเรียน 🚀</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                        display: ['Mali', 'cursive'], // Fun font for headings
+                    },
+                    colors: {
+                        brand: {
+                            blue: '#4361ee',
+                            pink: '#f72585',
+                            yellow: '#fcca46',
+                            green: '#4cc9f0',
+                            purple: '#7209b7'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        wiggle: {
+                            '0%, 100%': { transform: 'rotate(-3deg)' },
+                            '50%': { transform: 'rotate(3deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f8fafc; }
+        h1, h2, h3, .font-display { font-family: 'Mali', cursive; }
+        
+        /* Playful Scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #e2e8f0; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Card Hover Effects */
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+    </style>
+</head>
+<body class="text-slate-800 h-full flex flex-col">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50 border-b-4 border-brand-purple">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3 group cursor-pointer" onclick="switchTab('overview')">
+                <div class="bg-gradient-to-br from-brand-pink to-brand-purple p-3 rounded-2xl text-white shadow-lg group-hover:animate-wiggle transform transition">
+                    <i class="fa-solid fa-rocket text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-2xl leading-tight bg-clip-text text-transparent bg-gradient-to-r from-brand-purple to-brand-pink">MatEng Pro</h1>
+                    <p class="text-xs text-slate-500 font-medium">ฉบับนักเรียน 🌟</p>
+                </div>
+            </div>
+            
+            <nav class="hidden lg:flex items-center space-x-2 bg-slate-100 p-1 rounded-2xl">
+                <button onclick="switchTab('overview')" id="nav-overview" class="nav-btn px-5 py-2.5 rounded-xl text-sm font-bold bg-white text-brand-purple shadow-sm transition-all"><i class="fa-solid fa-house mr-2"></i> หน้าแรก</button>
+                <button onclick="switchTab('explorer')" id="nav-explorer" class="nav-btn px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all"><i class="fa-solid fa-layer-group mr-2"></i> คลังวัสดุ</button>
+                <button onclick="switchTab('simulator')" id="nav-simulator" class="nav-btn px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all"><i class="fa-solid fa-flask mr-2"></i> ห้องทดลอง</button>
+                <button onclick="switchTab('compare')" id="nav-compare" class="nav-btn px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all"><i class="fa-solid fa-scale-balanced mr-2"></i> เปรียบเทียบ</button>
+                <button onclick="switchTab('quiz')" id="nav-quiz" class="nav-btn px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all text-brand-pink"><i class="fa-solid fa-gamepad mr-2"></i> มินิเกม</button>
+            </nav>
+
+            <div class="flex items-center">
+                <div class="bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full text-sm font-bold flex items-center shadow-sm border border-yellow-200">
+                    <i class="fa-solid fa-star text-yellow-500 mr-2 animate-pulse"></i> Level 1
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Nav -->
+        <div class="lg:hidden flex overflow-x-auto p-3 bg-slate-50 gap-2 border-t border-slate-200">
+            <button onclick="switchTab('overview')" id="mob-nav-overview" class="mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-brand-purple text-white whitespace-nowrap shadow-md"><i class="fa-solid fa-house mr-1"></i> หน้าแรก</button>
+            <button onclick="switchTab('explorer')" id="mob-nav-explorer" class="mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-600 border border-slate-200 whitespace-nowrap shadow-sm"><i class="fa-solid fa-layer-group mr-1"></i> คลังวัสดุ</button>
+            <button onclick="switchTab('simulator')" id="mob-nav-simulator" class="mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-600 border border-slate-200 whitespace-nowrap shadow-sm"><i class="fa-solid fa-flask mr-1"></i> ห้องทดลอง</button>
+            <button onclick="switchTab('quiz')" id="mob-nav-quiz" class="mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-brand-pink border border-slate-200 whitespace-nowrap shadow-sm"><i class="fa-solid fa-gamepad mr-1"></i> เกม</button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+
+        <section id="tab-overview" class="space-y-8 animate-in fade-in duration-500">
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-r from-brand-purple via-[#560bad] to-brand-blue rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border-4 border-white/20">
+                <div class="absolute -right-10 -top-10 opacity-20 pointer-events-none animate-spin" style="animation-duration: 20s;">
+                    <i class="fa-solid fa-atom text-[200px]"></i>
+                </div>
+                
+                <div class="max-w-2xl relative z-10">
+                    <div class="inline-block bg-white/20 backdrop-blur-md text-white text-sm font-bold px-4 py-1.5 rounded-full mb-4 border border-white/30 shadow-sm">
+                        👋 ยินดีต้อนรับนักวิศวกรน้อย!
+                    </div>
+                    <h2 class="text-3xl sm:text-5xl font-bold mt-2 mb-4 leading-tight font-display text-transparent bg-clip-text bg-gradient-to-r from-white to-brand-green">
+                        สำรวจโลกของ <br/>วัสดุวิศวกรรม 4 เผ่าพันธุ์
+                    </h2>
+                    <p class="text-blue-100 text-base sm:text-lg mb-8 font-medium">
+                        สิ่งของทุกอย่างรอบตัวเราสร้างมาจากอะไร? มาทำความรู้จักกับ โลหะ, เซรามิก, พอลิเมอร์ และวัสดุผสม พร้อมเจาะลึกพลังแฝงของพวกเขากันเถอะ!
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <button onclick="switchTab('explorer')" class="bg-brand-yellow hover:bg-yellow-400 text-slate-900 font-bold px-8 py-3.5 rounded-2xl shadow-xl transform transition hover:scale-105 hover:-translate-y-1 flex items-center space-x-2 text-lg">
+                            <span>เริ่มการผจญภัย</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button onclick="switchTab('quiz')" class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border-2 border-white/30 font-bold px-8 py-3.5 rounded-2xl shadow-lg transform transition hover:scale-105 flex items-center space-x-2 text-lg">
+                            <i class="fa-solid fa-gamepad"></i>
+                            <span>เล่นมินิเกม</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Fun 3D-like illustration replacement using icons -->
+                <div class="relative z-10 hidden md:block w-64 h-64">
+                    <div class="absolute top-0 right-0 bg-blue-500 p-6 rounded-3xl shadow-2xl transform rotate-12 animate-float" style="animation-delay: 0s;">
+                        <i class="fa-solid fa-gears text-5xl text-white"></i>
+                    </div>
+                    <div class="absolute bottom-10 left-0 bg-emerald-500 p-6 rounded-3xl shadow-2xl transform -rotate-12 animate-float" style="animation-delay: 1s;">
+                        <i class="fa-solid fa-bottle-water text-5xl text-white"></i>
+                    </div>
+                    <div class="absolute top-20 left-10 bg-amber-500 p-5 rounded-3xl shadow-2xl transform rotate-6 animate-float" style="animation-delay: 0.5s;">
+                        <i class="fa-solid fa-fire text-4xl text-white"></i>
+                    </div>
+                    <div class="absolute bottom-0 right-10 bg-brand-pink p-5 rounded-3xl shadow-2xl transform -rotate-6 animate-float" style="animation-delay: 1.5s;">
+                        <i class="fa-solid fa-layer-group text-4xl text-white"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 Tribes (Categories) -->
+            <div>
+                <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center font-display"><i class="fa-solid fa-map-location-dot text-brand-purple mr-3"></i> 4 กลุ่มวัสดุหลัก (The 4 Tribes)</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Metal -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-blue-100 card-hover cursor-pointer relative overflow-hidden" onclick="switchTab('explorer'); setTimeout(()=>filterCategory('metal'),100);">
+                        <div class="absolute -right-6 -bottom-6 opacity-5"><i class="fa-solid fa-gears text-9xl"></i></div>
+                        <div class="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg mb-4">
+                            <i class="fa-solid fa-gears"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-slate-900 font-display">โลหะ (Metals)</h4>
+                        <p class="text-sm text-slate-500 mt-2 font-medium">แข็งแรง นำไฟฟ้าและนำความร้อนได้ดีเยี่ยม ดัดโค้งได้!</p>
+                        <div class="mt-4 inline-block bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-lg">ตัวอย่าง: เหล็ก, ทองแดง, อลูมิเนียม</div>
+                    </div>
+                    <!-- Ceramic -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-amber-100 card-hover cursor-pointer relative overflow-hidden" onclick="switchTab('explorer'); setTimeout(()=>filterCategory('ceramic'),100);">
+                        <div class="absolute -right-6 -bottom-6 opacity-5"><i class="fa-solid fa-fire text-9xl"></i></div>
+                        <div class="w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg mb-4">
+                            <i class="fa-solid fa-fire"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-slate-900 font-display">เซรามิก (Ceramics)</h4>
+                        <p class="text-sm text-slate-500 mt-2 font-medium">ทนความร้อนสูงปรี๊ด แข็งมากแต่เปราะ (ตกแตก!) เป็นฉนวนไฟฟ้า</p>
+                        <div class="mt-4 inline-block bg-amber-50 text-amber-700 text-xs font-bold px-3 py-1 rounded-lg">ตัวอย่าง: แก้ว, กระเบื้อง, อิฐ</div>
+                    </div>
+                    <!-- Polymer -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-emerald-100 card-hover cursor-pointer relative overflow-hidden" onclick="switchTab('explorer'); setTimeout(()=>filterCategory('polymer'),100);">
+                        <div class="absolute -right-6 -bottom-6 opacity-5"><i class="fa-solid fa-dna text-9xl"></i></div>
+                        <div class="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg mb-4">
+                            <i class="fa-solid fa-bottle-water"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-slate-900 font-display">พอลิเมอร์ (Polymers)</h4>
+                        <p class="text-sm text-slate-500 mt-2 font-medium">น้ำหนักเบาหวิว ยืดหยุ่นได้ดี ขึ้นรูปง่าย (พลาสติกและยาง)</p>
+                        <div class="mt-4 inline-block bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-lg">ตัวอย่าง: ขวด PET, ยางรถยนต์</div>
+                    </div>
+                    <!-- Composite -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-brand-pink/20 card-hover cursor-pointer relative overflow-hidden" onclick="switchTab('explorer'); setTimeout(()=>filterCategory('composite'),100);">
+                        <div class="absolute -right-6 -bottom-6 opacity-5"><i class="fa-solid fa-layer-group text-9xl"></i></div>
+                        <div class="w-14 h-14 bg-gradient-to-br from-brand-pink to-purple-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg mb-4">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-slate-900 font-display">วัสดุผสม (Composites)</h4>
+                        <p class="text-sm text-slate-500 mt-2 font-medium">การรวมพลังของวัสดุ 2 ชนิดขึ้นไป เพื่อให้ได้สุดยอดคุณสมบัติ!</p>
+                        <div class="mt-4 inline-block bg-pink-50 text-brand-pink text-xs font-bold px-3 py-1 rounded-lg">ตัวอย่าง: คาร์บอนไฟเบอร์, ไฟเบอร์กลาส</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fun Facts -->
+            <div class="bg-brand-yellow/10 border-2 border-brand-yellow/30 rounded-3xl p-6 relative">
+                <div class="absolute -top-5 left-6 bg-brand-yellow text-slate-900 font-bold px-4 py-2 rounded-2xl shadow-md transform -rotate-3 font-display">
+                    💡 รู้หรือไม่? (Did you know?)
+                </div>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex items-start space-x-3 bg-white p-4 rounded-2xl shadow-sm">
+                        <div class="text-2xl">📱</div>
+                        <p class="text-sm text-slate-700 font-medium">หน้าจอมือถือที่เราใช้ทำจาก <strong>เซรามิก (กระจก)</strong> แบบพิเศษที่ทนรอยขีดข่วนได้ดีเยี่ยม!</p>
+                    </div>
+                    <div class="flex items-start space-x-3 bg-white p-4 rounded-2xl shadow-sm">
+                        <div class="text-2xl">🏎️</div>
+                        <p class="text-sm text-slate-700 font-medium">รถแข่ง F1 ใช้วัสดุ <strong>คาร์บอนไฟเบอร์ (วัสดุผสม)</strong> เพราะเบากว่าเหล็กแต่แข็งแรงกว่าถึง 5 เท่า!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-explorer" class="space-y-6 hidden animate-in slide-in-from-right-4 duration-300">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-100">
+                <div class="text-center md:text-left">
+                    <h2 class="text-2xl font-bold text-slate-900 font-display text-brand-purple"><i class="fa-solid fa-box-open mr-2"></i> สมุดสะสมการ์ดวัสดุ</h2>
+                    <p class="text-sm text-slate-500 mt-1 font-medium">คลิกเลือกหมวดหมู่เพื่อดูสเตตัส (Status) ของวัสดุแต่ละชนิด</p>
+                </div>
+                <div class="flex flex-wrap justify-center gap-2 bg-slate-50 p-2 rounded-2xl">
+                    <button onclick="filterCategory('all')" id="cat-btn-all" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-brand-purple text-white shadow-md transition-all">ทุกธาตุ</button>
+                    <button onclick="filterCategory('metal')" id="cat-btn-metal" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-500 hover:bg-blue-50 transition-all border border-transparent hover:border-blue-200">โลหะ</button>
+                    <button onclick="filterCategory('ceramic')" id="cat-btn-ceramic" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-500 hover:bg-amber-50 transition-all border border-transparent hover:border-amber-200">เซรามิก</button>
+                    <button onclick="filterCategory('polymer')" id="cat-btn-polymer" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-500 hover:bg-emerald-50 transition-all border border-transparent hover:border-emerald-200">พอลิเมอร์</button>
+                    <button onclick="filterCategory('composite')" id="cat-btn-composite" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-500 hover:bg-pink-50 transition-all border border-transparent hover:border-pink-200">วัสดุผสม</button>
+                </div>
+            </div>
+
+            <!-- Material Grid Cards (Populated by JS) -->
+            <div id="material-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Cards inject here -->
+            </div>
+        </section>
+
+        <section id="tab-compare" class="space-y-6 hidden animate-in slide-in-from-right-4 duration-300">
+            
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold text-slate-900 text-lg font-display"><i class="fa-solid fa-dumbbell text-blue-500 mr-2"></i> ใครแข็งแกร่งที่สุด? (ความต้านแรงดึง)</h3>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-4 font-medium">ค่าสูง = รับน้ำหนัก/แรงดึงได้มากก่อนจะขาด (หน่วย: MPa)</p>
+                    <div class="relative h-64">
+                        <canvas id="strengthChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold text-slate-900 text-lg font-display"><i class="fa-solid fa-feather text-emerald-500 mr-2"></i> ใครเบาที่สุด? (ความหนาแน่น)</h3>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-4 font-medium">ค่าต่ำ = น้ำหนักเบา เหมาะกับทำเครื่องบิน/รถแข่ง (หน่วย: g/cm³)</p>
+                    <div class="relative h-64">
+                        <canvas id="densityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-100">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-xl font-bold text-slate-900 font-display"><i class="fa-solid fa-table text-brand-purple mr-2"></i> ตารางสเตตัสฉบับเต็ม</h2>
+                    <div class="relative w-full sm:w-64">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-search"></i></span>
+                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="ค้นหาชื่อวัสดุ..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-purple font-medium transition-colors">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-sm whitespace-nowrap">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold text-xs uppercase tracking-wider">
+                                <th class="p-4 rounded-tl-xl">การ์ดวัสดุ</th>
+                                <th class="p-4">เผ่าพันธุ์</th>
+                                <th class="p-4"><i class="fa-solid fa-feather mr-1 text-slate-300"></i> ความหนาแน่น</th>
+                                <th class="p-4"><i class="fa-solid fa-dumbbell mr-1 text-slate-300"></i> ความแข็งแรง</th>
+                                <th class="p-4"><i class="fa-solid fa-fire mr-1 text-slate-300"></i> ทนความร้อน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-200 bg-white font-medium">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-simulator" class="space-y-6 hidden animate-in slide-in-from-right-4 duration-300">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-slate-100">
+                <div class="text-center mb-8 max-w-2xl mx-auto">
+                    <div class="inline-block bg-brand-blue/10 text-brand-blue font-bold px-4 py-2 rounded-full mb-3 text-sm border border-brand-blue/20">
+                        <i class="fa-solid fa-flask mr-2"></i> ห้องทดลองเสมือนจริง
+                    </div>
+                    <h2 class="text-3xl font-bold text-slate-900 font-display mb-3">จำลองการดึงวัสดุจนขาด!</h2>
+                    <p class="text-slate-600 font-medium text-sm">ทดลองเลือกวัสดุแต่ละประเภท แล้วดูว่ากราฟ "ความเค้น-ความเครียด (Stress-Strain Curve)" บอกลักษณะนิสัยของวัสดุอย่างไร</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <!-- Controls -->
+                    <div class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-200 lg:col-span-1 space-y-4">
+                        <h3 class="font-bold text-slate-800 font-display text-lg mb-4 text-center">เลือกตัวอย่างทดสอบ</h3>
+                        
+                        <label class="flex items-center p-3 bg-white border-2 border-blue-200 rounded-2xl cursor-pointer hover:bg-blue-50 transition-all shadow-sm group">
+                            <input type="radio" name="simMaterial" value="metal" checked onchange="updateSimulator()" class="w-5 h-5 text-blue-600 focus:ring-blue-500">
+                            <div class="ml-3">
+                                <span class="block font-bold text-slate-800 group-hover:text-blue-700">โลหะ (เหล็ก)</span>
+                                <span class="text-[10px] text-slate-500 font-medium">เหนียว ยืดได้ก่อนขาด</span>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center p-3 bg-white border-2 border-amber-200 rounded-2xl cursor-pointer hover:bg-amber-50 transition-all shadow-sm group">
+                            <input type="radio" name="simMaterial" value="ceramic" onchange="updateSimulator()" class="w-5 h-5 text-amber-500 focus:ring-amber-500">
+                            <div class="ml-3">
+                                <span class="block font-bold text-slate-800 group-hover:text-amber-700">เซรามิก (แก้ว)</span>
+                                <span class="text-[10px] text-slate-500 font-medium">แข็งแต่เปราะ ขาดทันที</span>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center p-3 bg-white border-2 border-emerald-200 rounded-2xl cursor-pointer hover:bg-emerald-50 transition-all shadow-sm group">
+                            <input type="radio" name="simMaterial" value="polymer" onchange="updateSimulator()" class="w-5 h-5 text-emerald-500 focus:ring-emerald-500">
+                            <div class="ml-3">
+                                <span class="block font-bold text-slate-800 group-hover:text-emerald-700">พอลิเมอร์ (ยาง/พลาสติก)</span>
+                                <span class="text-[10px] text-slate-500 font-medium">ยืดยาวววววววว</span>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center p-3 bg-white border-2 border-pink-200 rounded-2xl cursor-pointer hover:bg-pink-50 transition-all shadow-sm group">
+                            <input type="radio" name="simMaterial" value="composite" onchange="updateSimulator()" class="w-5 h-5 text-pink-500 focus:ring-pink-500">
+                            <div class="ml-3">
+                                <span class="block font-bold text-slate-800 group-hover:text-pink-700">วัสดุผสม (คาร์บอน)</span>
+                                <span class="text-[10px] text-slate-500 font-medium">แข็งแรงปรี๊ด ดึงไม่ค่อยยืด</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Chart & Animation -->
+                    <div class="lg:col-span-3 space-y-6">
+                        <!-- Visual Feedback Bar -->
+                        <div class="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-inner flex flex-col items-center justify-center min-h-[160px]">
+                            <h4 class="absolute top-4 left-6 font-bold text-sm text-slate-400 font-display">สิ่งที่เกิดขึ้นกับวัสดุ:</h4>
+                            
+                            <!-- The material block that stretches -->
+                            <div class="w-full max-w-md mt-6 relative flex items-center justify-center">
+                                <!-- Left Clamp -->
+                                <div class="w-8 h-16 bg-slate-700 rounded-l-lg z-10 border-r-4 border-slate-600 flex items-center justify-center text-xs font-bold shadow-lg">ยึด</div>
+                                <!-- Material Body -->
+                                <div id="sim-material-body" class="h-8 bg-blue-500 w-32 transition-all duration-1000 ease-in-out relative flex items-center justify-center overflow-hidden">
+                                    <div class="absolute inset-0 bg-white/20" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);"></div>
+                                </div>
+                                <!-- Right Clamp -->
+                                <div class="w-8 h-16 bg-slate-700 rounded-r-lg z-10 border-l-4 border-slate-600 flex items-center justify-center text-xs font-bold shadow-lg">ดึง <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                            </div>
+                            
+                            <!-- Result text -->
+                            <div id="sim-result-text" class="mt-6 text-center font-bold text-xl text-blue-400 animate-pulse font-display">
+                                โลหะจะยืดออกเล็กน้อยแล้วค่อยๆ ขาด (มีคอคอด)
+                            </div>
+                            
+                            <button onclick="playSimulation()" class="absolute top-4 right-6 bg-brand-yellow text-slate-900 font-bold px-4 py-2 rounded-xl text-sm hover:scale-105 transition shadow-lg flex items-center">
+                                <i class="fa-solid fa-play mr-2"></i> กดเพื่อดึง!
+                            </button>
+                        </div>
+
+                        <!-- Graph -->
+                        <div class="bg-white p-4 rounded-3xl border-2 border-slate-100 h-[300px] relative">
+                            <canvas id="stressStrainChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-quiz" class="space-y-6 hidden animate-in zoom-in-95 duration-300">
+            <div class="max-w-3xl mx-auto bg-white p-8 sm:p-12 rounded-[2rem] shadow-xl border-4 border-brand-purple text-center relative overflow-hidden">
+                <!-- Background decoration -->
+                <div class="absolute -top-10 -left-10 text-brand-purple/5 rotate-12"><i class="fa-solid fa-gamepad text-[200px]"></i></div>
+                
+                <div id="quiz-intro" class="relative z-10">
+                    <h2 class="text-4xl font-bold text-slate-900 font-display mb-4">ประลองความรู้! 🎮</h2>
+                    <p class="text-slate-600 font-medium mb-8 text-lg">มาทดสอบกันหน่อยว่า น้องๆ เข้าใจเรื่องวัสดุวิศวกรรมมากแค่ไหน (มี 5 ข้อ)</p>
+                    <button onclick="startQuiz()" class="bg-brand-pink hover:bg-pink-600 text-white font-bold text-xl px-10 py-4 rounded-full shadow-lg transform transition hover:scale-110 animate-bounce">
+                        เริ่มลุยเลย!
+                    </button>
+                </div>
+
+                <div id="quiz-active" class="hidden relative z-10 text-left">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="bg-slate-100 text-slate-600 font-bold px-4 py-1.5 rounded-full text-sm" id="quiz-progress">ข้อ 1 / 5</span>
+                        <span class="bg-brand-yellow text-slate-900 font-bold px-4 py-1.5 rounded-full text-sm"><i class="fa-solid fa-star"></i> คะแนน: <span id="quiz-score">0</span></span>
+                    </div>
+                    
+                    <h3 id="quiz-question" class="text-2xl font-bold text-slate-800 font-display mb-6 leading-relaxed">คำถามจะแสดงที่นี่?</h3>
+                    
+                    <div id="quiz-options" class="grid grid-cols-1 gap-3">
+                        <!-- Options injected via JS -->
+                    </div>
+                </div>
+
+                <div id="quiz-result" class="hidden relative z-10">
+                    <div class="text-6xl mb-4" id="quiz-emoji">🏆</div>
+                    <h2 class="text-3xl font-bold text-slate-900 font-display mb-2">จบการทดสอบ!</h2>
+                    <p class="text-xl text-slate-600 font-medium mb-6">น้องทำคะแนนได้: <strong class="text-brand-purple text-3xl" id="quiz-final-score">0/5</strong></p>
+                    <p id="quiz-feedback" class="text-lg font-bold text-brand-pink mb-8">เยี่ยมมาก!</p>
+                    <button onclick="resetQuiz()" class="bg-brand-purple hover:bg-purple-700 text-white font-bold px-8 py-3 rounded-full shadow-lg transition">
+                        <i class="fa-solid fa-rotate-right mr-2"></i> เล่นอีกครั้ง
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="materialModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] items-center justify-center p-4 hidden flex">
+        <div class="bg-white rounded-[2rem] max-w-lg w-full p-6 sm:p-8 shadow-2xl relative transform transition-all scale-95 opacity-0 duration-300" id="modal-card">
+            <button onclick="closeModal()" class="absolute top-5 right-5 w-10 h-10 bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 rounded-full flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div id="modalContent">
+                <!-- Dynamically filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game/Quiz State
+        let currentQuestion = 0;
+        let score = 0;
+        const quizData = [
+            {
+                q: "วัสดุชนิดใดที่ 'แข็งมากแต่ตกแล้วแตก' (เปราะ) และมักใช้ทำจานชามหรือฉนวนความร้อน?",
+                options: ["โลหะ", "เซรามิก", "พอลิเมอร์", "วัสดุผสม"],
+                answer: 1 // Index of correct option (เซรามิก)
+            },
+            {
+                q: "ยางรถยนต์ หรือ ขวดน้ำพลาสติก จัดอยู่ในกลุ่มวัสดุใด?",
+                options: ["โลหะ", "พอลิเมอร์", "เซรามิก", "คาร์บอนไฟเบอร์"],
+                answer: 1 // พอลิเมอร์
+            },
+            {
+                q: "ถ้าต้องการสร้าง 'เครื่องบิน' ที่ต้อง แข็งแรงมากและน้ำหนักเบา ควรเลือกใช้วัสดุใดดีที่สุด?",
+                options: ["เหล็กกล้า", "กระเบื้องเซรามิก", "คาร์บอนไฟเบอร์คอมโพสิต", "พลาสติกใส"],
+                answer: 2 // คาร์บอนไฟเบอร์
+            },
+            {
+                q: "จุดเด่นที่สำคัญที่สุดของ 'โลหะ' เช่น ทองแดงและอลูมิเนียม คืออะไร?",
+                options: ["นำไฟฟ้าและนำความร้อนได้ดี", "น้ำหนักเบาที่สุด", "โปร่งใสแสงผ่านได้", "ยืดหยุ่นเหมือนหนังยาง"],
+                answer: 0 // นำไฟฟ้า
+            },
+            {
+                q: "วัสดุในข้อใดทนความร้อนได้สูงที่สุด (มักใช้ในเตาเผาอุตสาหกรรม)?",
+                options: ["พลาสติก PVC", "ซิลิคอนคาร์ไบด์ (เซรามิก)", "อลูมิเนียม", "ไม้"],
+                answer: 1 // ซิลิคอนคาร์ไบด์
+            }
+        ];
+
+        // Chart Instances
+        let strengthChartInstance = null;
+        let densityChartInstance = null;
+        let stressStrainChartInstance = null;
+
+        // Expanded Data with 'Stats' for Trading Cards (Max values for 100% bar width)
+        const MAX_STRENGTH = 1600;
+        const MAX_DENSITY = 8.0;
+        const MAX_TEMP = 1700;
+
+        const materialsData = [
+            {
+                id: 1, name: "เหล็กกล้าคาร์บอน", category: "metal", catName: "โลหะ",
+                density: 7.85, strength: 450, modulus: 207, temp: 500,
+                color: "blue", icon: "fa-gears", bg: "bg-blue-500",
+                desc: "ลูกพี่ใหญ่แห่งวงการก่อสร้าง! หนัก แข็งแรง และราคาถูก แต่ระวังสนิมนะ",
+                apps: ["ตึกสูง", "สะพาน", "ชิ้นส่วนรถยนต์"]
+            },
+            {
+                id: 2, name: "อลูมิเนียมอัลลอยด์", category: "metal", catName: "โลหะ",
+                density: 2.70, strength: 310, modulus: 69, temp: 300,
+                color: "blue", icon: "fa-plane", bg: "bg-cyan-500",
+                desc: "ฮีโร่น้ำหนักเบา! ไม่กลัวสนิม นิยมใช้ทำเครื่องบินและกระป๋องน้ำอัดลม",
+                apps: ["เครื่องบิน", "กรอบหน้าต่าง", "สมาร์ทโฟน"]
+            },
+            {
+                id: 3, name: "ไทเทเนียม", category: "metal", catName: "โลหะ",
+                density: 4.43, strength: 950, modulus: 114, temp: 600,
+                color: "blue", icon: "fa-shield-halved", bg: "bg-indigo-500",
+                desc: "สุดยอดโลหะระดับพรีเมียม แข็งแกร่งดั่งเหล็กแต่เบากว่าเกือบครึ่ง! แถมร่างกายมนุษย์ไม่ต่อต้าน",
+                apps: ["กระดูกเทียม", "ยานอวกาศ", "ไม้กอล์ฟ"]
+            },
+            {
+                id: 4, name: "อะลูมินา (Al₂O₃)", category: "ceramic", catName: "เซรามิก",
+                density: 3.95, strength: 300, modulus: 370, temp: 1600,
+                color: "amber", icon: "fa-fire", bg: "bg-amber-500",
+                desc: "นักรบทนความร้อน! แข็งมาก ทนไฟสุดๆ แต่ถ้าตกกระแทกแรงๆ ก็แตกได้",
+                apps: ["หัวเทียนรถ", "เกราะกันกระสุน", "กระเบื้องทนไฟ"]
+            },
+            {
+                id: 5, name: "ซิลิคอนคาร์ไบด์", category: "ceramic", catName: "เซรามิก",
+                density: 3.21, strength: 400, modulus: 410, temp: 1650,
+                color: "amber", icon: "fa-bolt", bg: "bg-orange-600",
+                desc: "แรร์ไอเทม! แข็งรองจากเพชร ทนทานการขัดสีสุดๆ ใช้เบรกซูเปอร์คาร์",
+                apps: ["เบรกรถสปอร์ต", "ชิ้นส่วนเตาเผา", "กระดาษทราย"]
+            },
+            {
+                id: 6, name: "พอลิเอทิลีน (HDPE)", category: "polymer", catName: "พอลิเมอร์",
+                density: 0.95, strength: 30, modulus: 1.2, temp: 80,
+                color: "emerald", icon: "fa-bottle-water", bg: "bg-emerald-500",
+                desc: "จอมยืดหยุ่น น้ำหนักเบาจนลอยน้ำได้! พบได้ทั่วไปในขวดแชมพูและถังน้ำ",
+                apps: ["ถังเก็บน้ำ", "ขวดแชมพู", "ของเล่นเด็ก"]
+            },
+            {
+                id: 7, name: "โพลีคาร์บอเนต (PC)", category: "polymer", catName: "พอลิเมอร์",
+                density: 1.20, strength: 65, modulus: 2.4, temp: 125,
+                color: "emerald", icon: "fa-glasses", bg: "bg-teal-500",
+                desc: "พลาสติกพลังช้างสาร! ใสปิ๊งแต่มือทุบไม่แตก ใช้ทำกระจกกันกระสุน",
+                apps: ["แว่นตา", "ไฟหน้ารถ", "โล่ตำรวจ"]
+            },
+            {
+                id: 8, name: "คาร์บอนไฟเบอร์", category: "composite", catName: "วัสดุผสม",
+                density: 1.55, strength: 1600, modulus: 135, temp: 200,
+                color: "pink", icon: "fa-layer-group", bg: "bg-pink-600",
+                desc: "ราชาแห่งความเบาและแกร่ง! เกิดจากการทอเส้นใยคาร์บอนเข้ากับเรซิน แกร่งกว่าเหล็กแต่เบาหวิว",
+                apps: ["รถ F1", "จักรยานแข่ง", "โดรน"]
+            },
+            {
+                id: 9, name: "ไฟเบอร์กลาส", category: "composite", catName: "วัสดุผสม",
+                density: 1.85, strength: 800, modulus: 35, temp: 150,
+                color: "pink", icon: "fa-ship", bg: "bg-purple-500",
+                desc: "ฝาแฝดผู้น้องของคาร์บอนไฟเบอร์ ราคาถูกกว่า ใช้ใยแก้วเสริมแรง ไม่กลัวน้ำและแดด",
+                apps: ["เรือ", "สไลเดอร์สวนน้ำ", "หลังคารถกระบะ"]
+            }
+        ];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderMaterials(materialsData);
+            renderTable(materialsData);
+            initCharts();
+            initSimulatorChart();
+        });
+
+        function switchTab(tabId) {
+            const tabs = ['overview', 'explorer', 'compare', 'simulator', 'quiz'];
+            
+            // Update UI Active states
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                
+                // Desktop Nav
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (navBtn) {
+                    navBtn.className = 'nav-btn px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all';
+                    if(t === 'quiz') navBtn.classList.add('text-brand-pink');
+                }
+                
+                // Mobile Nav
+                const mobBtn = document.getElementById(`mob-nav-${t}`);
+                if (mobBtn) {
+                    mobBtn.className = 'mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-600 border border-slate-200 whitespace-nowrap shadow-sm';
+                    if(t === 'quiz') mobBtn.classList.add('text-brand-pink');
+                }
+            });
+
+            // Show selected tab
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            
+            // Highlight Desktop
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                if(tabId === 'quiz') {
+                    activeNav.className = 'nav-btn px-5 py-2.5 rounded-xl text-sm font-bold bg-brand-pink text-white shadow-md transition-all';
+                } else {
+                    activeNav.className = 'nav-btn px-5 py-2.5 rounded-xl text-sm font-bold bg-white text-brand-purple shadow-md transition-all border-b-2 border-brand-purple';
+                }
+            }
+            
+            // Highlight Mobile
+            const activeMob = document.getElementById(`mob-nav-${tabId}`);
+            if (activeMob) {
+                if(tabId === 'quiz') {
+                    activeMob.className = 'mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-brand-pink text-white whitespace-nowrap shadow-md';
+                } else {
+                    activeMob.className = 'mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-brand-purple text-white whitespace-nowrap shadow-md';
+                }
+            }
+
+            // Resize charts to prevent canvas squishing
+            if (tabId === 'compare') {
+                if (strengthChartInstance) strengthChartInstance.resize();
+                if (densityChartInstance) densityChartInstance.resize();
+            } else if (tabId === 'simulator') {
+                if (stressStrainChartInstance) stressStrainChartInstance.resize();
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderMaterials(data) {
+            const grid = document.getElementById('material-grid');
+            grid.innerHTML = '';
+
+            if (data.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 font-bold">ไม่พบการ์ดวัสดุ!</div>`;
+                return;
+            }
+
+            data.forEach(mat => {
+                // Calculate percentages for power bars
+                const strPct = Math.min((mat.strength / MAX_STRENGTH) * 100, 100);
+                const denPct = Math.min((mat.density / MAX_DENSITY) * 100, 100);
+                
+                const cardHtml = `
+                    <div class="bg-white rounded-3xl overflow-hidden shadow-md border-2 border-slate-100 card-hover cursor-pointer flex flex-col h-full group" onclick="openModal(${mat.id})">
+                        <!-- Top Header Color -->
+                        <div class="h-24 ${mat.bg} relative flex items-center justify-center">
+                            <div class="absolute -bottom-6 w-16 h-16 bg-white rounded-full p-1 shadow-lg">
+                                <div class="w-full h-full ${mat.bg} rounded-full flex items-center justify-center text-white text-xl">
+                                    <i class="fa-solid ${mat.icon}"></i>
+                                </div>
+                            </div>
+                            <div class="absolute top-3 right-3 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded-lg">
+                                ${mat.catName}
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 pt-10 flex-1 flex flex-col">
+                            <h3 class="font-bold text-slate-900 text-xl text-center mb-1 font-display group-hover:text-brand-purple transition-colors">${mat.name}</h3>
+                            <p class="text-xs text-slate-500 text-center mb-6 h-10 line-clamp-2 font-medium">${mat.desc}</p>
+                            
+                            <!-- Power Stats Bars -->
+                            <div class="space-y-4 mt-auto bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1 font-bold">
+                                        <span class="text-slate-600"><i class="fa-solid fa-dumbbell text-blue-500 w-4"></i> ความแข็งแกร่ง</span>
+                                        <span class="text-slate-800">${mat.strength}</span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 rounded-full h-2">
+                                        <div class="bg-blue-500 h-2 rounded-full" style="width: ${strPct}%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1 font-bold">
+                                        <span class="text-slate-600"><i class="fa-solid fa-weight-hanging text-amber-500 w-4"></i> น้ำหนัก (ความหนาแน่น)</span>
+                                        <span class="text-slate-800">${mat.density}</span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 rounded-full h-2">
+                                        <div class="bg-amber-500 h-2 rounded-full" style="width: ${denPct}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.innerHTML += cardHtml;
+            });
+        }
+
+        function filterCategory(cat) {
+            const btns = document.querySelectorAll('.cat-btn');
+            btns.forEach(btn => {
+                btn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-500 hover:bg-slate-100 transition-all border border-transparent';
+            });
+            
+            const activeBtn = document.getElementById(`cat-btn-${cat}`);
+            if(activeBtn) {
+                if(cat === 'all') activeBtn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-brand-purple text-white shadow-md transition-all';
+                if(cat === 'metal') activeBtn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-blue-500 text-white shadow-md transition-all';
+                if(cat === 'ceramic') activeBtn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-amber-500 text-white shadow-md transition-all';
+                if(cat === 'polymer') activeBtn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-emerald-500 text-white shadow-md transition-all';
+                if(cat === 'composite') activeBtn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-pink-500 text-white shadow-md transition-all';
+            }
+
+            if (cat === 'all') {
+                renderMaterials(materialsData);
+            } else {
+                renderMaterials(materialsData.filter(m => m.category === cat));
+            }
+        }
+
+        function openModal(id) {
+            const mat = materialsData.find(m => m.id === id);
+            if (!mat) return;
+
+            document.getElementById('materialModal').classList.remove('hidden');
+            // Small delay to trigger animation
+            setTimeout(() => {
+                document.getElementById('modal-card').classList.remove('scale-95', 'opacity-0');
+                document.getElementById('modal-card').classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            const content = document.getElementById('modalContent');
+            content.innerHTML = `
+                <div class="flex items-center space-x-4 mb-6">
+                    <div class="w-16 h-16 ${mat.bg} text-white rounded-2xl flex items-center justify-center text-3xl shadow-lg">
+                        <i class="fa-solid ${mat.icon}"></i>
+                    </div>
+                    <div>
+                        <span class="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-md">${mat.catName}</span>
+                        <h3 class="text-2xl font-bold text-slate-900 font-display mt-1">${mat.name}</h3>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 text-blue-800 p-4 rounded-2xl mb-6 font-medium text-sm border border-blue-100">
+                    💡 ${mat.desc}
+                </div>
+                
+                <h4 class="font-bold text-slate-900 text-base mb-3 font-display"><i class="fa-solid fa-chart-simple text-brand-pink mr-2"></i> สเตตัสพลัง (Stats)</h4>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
+                        <div class="text-slate-400 text-xs font-bold mb-1">ความหนาแน่น</div>
+                        <div class="font-bold text-slate-800 text-lg">${mat.density} <span class="text-xs">g/cm³</span></div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
+                        <div class="text-slate-400 text-xs font-bold mb-1">ทนแรงดึง</div>
+                        <div class="font-bold text-slate-800 text-lg">${mat.strength} <span class="text-xs">MPa</span></div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
+                        <div class="text-slate-400 text-xs font-bold mb-1">ทนความร้อน</div>
+                        <div class="font-bold text-slate-800 text-lg">${mat.temp} <span class="text-xs">°C</span></div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
+                        <div class="text-slate-400 text-xs font-bold mb-1">ความยืดหยุ่น</div>
+                        <div class="font-bold text-slate-800 text-lg">${mat.modulus} <span class="text-xs">GPa</span></div>
+                    </div>
+                </div>
+
+                <h4 class="font-bold text-slate-900 text-base mb-3 font-display"><i class="fa-solid fa-hammer text-brand-yellow mr-2"></i> นำไปสร้างอะไรดี?</h4>
+                <div class="flex flex-wrap gap-2 mb-2">
+                    ${mat.apps.map(app => `<span class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-sm font-medium"><i class="fa-solid fa-check text-emerald-500 mr-1"></i> ${app}</span>`).join('')}
+                </div>
+            `;
+        }
+
+        function closeModal() {
+            document.getElementById('modal-card').classList.remove('scale-100', 'opacity-100');
+            document.getElementById('modal-card').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                document.getElementById('materialModal').classList.add('hidden');
+            }, 300);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            data.forEach(mat => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
+                        <td class="p-4 font-bold text-slate-800 flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg ${mat.bg} text-white flex items-center justify-center text-xs"><i class="fa-solid ${mat.icon}"></i></div>
+                            <span>${mat.name}</span>
+                        </td>
+                        <td class="p-4 text-slate-600"><span class="bg-slate-100 px-2 py-1 rounded-lg text-xs font-bold">${mat.catName}</span></td>
+                        <td class="p-4 text-slate-700">${mat.density}</td>
+                        <td class="p-4 text-slate-700">${mat.strength}</td>
+                        <td class="p-4 text-slate-700">${mat.temp}°C</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function filterTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            renderTable(materialsData.filter(m => m.name.toLowerCase().includes(query) || m.catName.toLowerCase().includes(query)));
+        }
+
+        function initCharts() {
+            // Reusable chart options for playful look
+            const chartOptions = {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9', drawBorder: false }, ticks: { font: { family: 'Prompt' } } },
+                    x: { grid: { display: false }, ticks: { font: { family: 'Prompt', weight: 'bold' } } }
+                }
+            };
+
+            const labels = materialsData.map(m => m.name.split(' ')[0]); // Short names
+            const colors = materialsData.map(m => {
+                if (m.category === 'metal') return '#3b82f6';
+                if (m.category === 'ceramic') return '#f59e0b';
+                if (m.category === 'polymer') return '#10b981';
+                return '#db2777';
+            });
+
+            // Strength Chart
+            strengthChartInstance = new Chart(document.getElementById('strengthChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ทนแรงดึง (MPa)', data: materialsData.map(m => m.strength),
+                        backgroundColor: colors, borderRadius: 8, barThickness: 20
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Density Chart
+            densityChartInstance = new Chart(document.getElementById('densityChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ความหนาแน่น (g/cm³)', data: materialsData.map(m => m.density),
+                        backgroundColor: colors, borderRadius: 8, barThickness: 20
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+
+        function initSimulatorChart() {
+            stressStrainChartInstance = new Chart(document.getElementById('stressStrainChart'), {
+                type: 'line',
+                data: {
+                    labels: [0, 1, 2, 3, 4, 5],
+                    datasets: [{
+                        label: 'โลหะ', data: [0, 20, 30, 40, 45, 40],
+                        borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderWidth: 4, fill: true, tension: 0.4, pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { title: { display: true, text: 'แรงดึง (Stress)', font:{family:'Prompt', weight:'bold'} }, beginAtZero: true, max: 100 },
+                        x: { title: { display: true, text: 'ระยะที่ยืดออก (Strain)', font:{family:'Prompt', weight:'bold'} }, beginAtZero: true, max: 6 }
+                    }
+                }
+            });
+            updateSimulator(); // Set initial text
+        }
+
+        const simConfig = {
+            metal: {
+                color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.2)', width: 'w-48', label: 'โลหะ (เหนียว ยืดได้ระดับนึงก่อนขาด)',
+                data: [0, 40, 60, 75, 80, 70], maxX: 5
+            },
+            ceramic: {
+                color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.2)', width: 'w-32', label: 'เซรามิก (แข็งปั๋ง! ยืดไม่ได้ พอแรงเยอะก็ขาดผึง!)',
+                data: [0, 50, 90, null, null, null], maxX: 2
+            },
+            polymer: {
+                color: '#10b981', bg: 'rgba(16, 185, 129, 0.2)', width: 'w-72', label: 'พอลิเมอร์ (ยืดหยุ่นสูง ดึงยืดได้ยาววววววววว)',
+                data: [0, 10, 15, 20, 25, 30], maxX: 6
+            },
+            composite: {
+                color: '#ec4899', bg: 'rgba(236, 72, 153, 0.2)', width: 'w-36', label: 'วัสดุผสม (แข็งแรงมาก ทนแรงดึงได้สูงลิ่ว ยืดนิดเดียว)',
+                data: [0, 60, 100, null, null, null], maxX: 2.5
+            }
+        };
+
+        function updateSimulator() {
+            const type = document.querySelector('input[name="simMaterial"]:checked').value;
+            const conf = simConfig[type];
+            
+            // Reset Animation Element visually before play
+            const matBody = document.getElementById('sim-material-body');
+            matBody.className = `h-8 w-32 transition-all duration-1000 ease-in-out relative flex items-center justify-center overflow-hidden bg-${type==='metal'?'blue':type==='ceramic'?'amber':type==='polymer'?'emerald':'pink'}-500`;
+            matBody.innerHTML = `<div class="absolute inset-0 bg-white/20" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);"></div>`;
+            
+            document.getElementById('sim-result-text').innerText = "กดปุ่ม 'ดึง' เพื่อดูผลลัพธ์";
+            document.getElementById('sim-result-text').className = "mt-6 text-center font-bold text-xl text-slate-400 font-display";
+
+            // Update Chart Data (Empty until played, or show static?)
+            // Let's show static curve
+            stressStrainChartInstance.data.datasets[0].data = conf.data;
+            stressStrainChartInstance.data.datasets[0].borderColor = conf.color;
+            stressStrainChartInstance.data.datasets[0].backgroundColor = conf.bg;
+            stressStrainChartInstance.update();
+        }
+
+        function playSimulation() {
+            const type = document.querySelector('input[name="simMaterial"]:checked').value;
+            const conf = simConfig[type];
+            const matBody = document.getElementById('sim-material-body');
+            const resultTxt = document.getElementById('sim-result-text');
+
+            // Apply stretching CSS class based on material type
+            matBody.classList.remove('w-32');
+            matBody.classList.add(conf.width);
+            
+            if(type === 'ceramic' || type === 'composite') {
+                // Break fast
+                setTimeout(() => {
+                    matBody.innerHTML = `<div class="w-1/2 h-full bg-inherit border-r-4 border-red-500 rounded-r-lg skew-x-12"></div><div class="w-1/2 h-full bg-inherit border-l-4 border-red-500 rounded-l-lg -skew-x-12 ml-4"></div>`;
+                    resultTxt.innerText = conf.label;
+                    resultTxt.className = `mt-6 text-center font-bold text-xl text-${type==='ceramic'?'amber':'pink'}-400 font-display animate-bounce`;
+                }, 800);
+            } else {
+                // Necking and break
+                setTimeout(() => {
+                    matBody.innerHTML = `<div class="w-full h-4 bg-inherit my-auto transition-all duration-300"></div>`; // necking
+                }, 800);
+                setTimeout(() => {
+                    matBody.innerHTML = `<div class="w-1/2 h-4 bg-inherit rounded-r-full mr-2"></div><div class="w-1/2 h-4 bg-inherit rounded-l-full ml-2"></div>`;
+                    resultTxt.innerText = conf.label;
+                    resultTxt.className = `mt-6 text-center font-bold text-xl text-${type==='metal'?'blue':'emerald'}-400 font-display animate-bounce`;
+                }, 1300);
+            }
+        }
+
+        function startQuiz() {
+            document.getElementById('quiz-intro').classList.add('hidden');
+            document.getElementById('quiz-active').classList.remove('hidden');
+            currentQuestion = 0;
+            score = 0;
+            updateQuizScore();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = quizData[currentQuestion];
+            document.getElementById('quiz-progress').innerText = `ข้อ ${currentQuestion + 1} / ${quizData.length}`;
+            document.getElementById('quiz-question').innerText = q.q;
+            
+            const opts = document.getElementById('quiz-options');
+            opts.innerHTML = '';
+            q.options.forEach((opt, index) => {
+                opts.innerHTML += `
+                    <button onclick="checkAnswer(${index})" class="w-full text-left p-4 rounded-2xl border-2 border-slate-200 hover:border-brand-purple hover:bg-purple-50 font-bold text-slate-700 transition-all text-lg group">
+                        <span class="inline-block w-8 h-8 bg-slate-200 text-slate-600 rounded-full text-center leading-8 mr-3 group-hover:bg-brand-purple group-hover:text-white transition-colors">${['A','B','C','D'][index]}</span>
+                        ${opt}
+                    </button>
+                `;
+            });
+        }
+
+        function checkAnswer(selectedIndex) {
+            const q = quizData[currentQuestion];
+            if (selectedIndex === q.answer) {
+                score++;
+                updateQuizScore();
+                // Simple correct feedback
+                const opts = document.getElementById('quiz-options').children;
+                opts[selectedIndex].classList.replace('border-slate-200', 'border-emerald-500');
+                opts[selectedIndex].classList.replace('hover:bg-purple-50', 'bg-emerald-50');
+                opts[selectedIndex].classList.add('text-emerald-700');
+            } else {
+                const opts = document.getElementById('quiz-options').children;
+                opts[selectedIndex].classList.replace('border-slate-200', 'border-red-400');
+                opts[selectedIndex].classList.add('bg-red-50', 'text-red-600');
+                
+                // Highlight correct
+                opts[q.answer].classList.replace('border-slate-200', 'border-emerald-500');
+                opts[q.answer].classList.add('bg-emerald-50');
+            }
+
+            // Wait 1 second then next
+            setTimeout(() => {
+                currentQuestion++;
+                if (currentQuestion < quizData.length) {
+                    loadQuestion();
+                } else {
+                    showQuizResult();
+                }
+            }, 1200);
+        }
+
+        function updateQuizScore() {
+            document.getElementById('quiz-score').innerText = score;
+        }
+
+        function showQuizResult() {
+            document.getElementById('quiz-active').classList.add('hidden');
+            document.getElementById('quiz-result').classList.remove('hidden');
+            
+            document.getElementById('quiz-final-score').innerText = `${score} / ${quizData.length}`;
+            const feedback = document.getElementById('quiz-feedback');
+            const emoji = document.getElementById('quiz-emoji');
+            
+            if (score === 5) {
+                feedback.innerText = "อัจฉริยะ! น้องคือมาสเตอร์ด้านวัสดุศาสตร์ 🥇";
+                feedback.className = "text-xl font-bold text-brand-purple mb-8";
+                emoji.innerText = "🏆";
+            } else if (score >= 3) {
+                feedback.innerText = "เก่งมาก! พื้นฐานแน่นสุดๆ ไปทบทวนอีกนิดก็สมบูรณ์แบบ 👍";
+                feedback.className = "text-xl font-bold text-brand-pink mb-8";
+                emoji.innerText = "🎉";
+            } else {
+                feedback.innerText = "พยายามได้ดี! ลองกลับไปอ่านหน้าการ์ดวัสดุอีกรอบนะ สู้ๆ ✌️";
+                feedback.className = "text-xl font-bold text-slate-600 mb-8";
+                emoji.innerText = "📚";
+            }
+        }
+
+        function resetQuiz() {
+            document.getElementById('quiz-result').classList.add('hidden');
+            startQuiz();
+        }
+    </script>
+</body>
+</html>
