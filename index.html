@@ -1,1393 +1,651 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-
-// กำหนดหมวดหมู่และสีประจำหมวด
-const CATEGORIES = {
-  POLYMER: { id: 'Polymer', name: 'พอลิเมอร์', icon: '🧬', color: 'from-blue-400 to-blue-600', text: 'text-blue-400', border: 'border-blue-500/50' },
-  METAL: { id: 'Metal', name: 'โลหะ', icon: '⚙️', color: 'from-slate-400 to-slate-600', text: 'text-slate-300', border: 'border-slate-500/50' },
-  CERAMIC: { id: 'Ceramic', name: 'เซรามิก', icon: '🏺', color: 'from-cyan-400 to-cyan-600', text: 'text-cyan-400', border: 'border-cyan-500/50' },
-  NATURAL: { id: 'Natural', name: 'ธรรมชาติ', icon: '🌿', color: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400', border: 'border-emerald-500/50' },
-  ADDITIVE: { id: 'Additive', name: 'สารเติมแต่ง', icon: '🧪', color: 'from-fuchsia-400 to-fuchsia-600', text: 'text-fuchsia-400', border: 'border-fuchsia-500/50' }
-};
-
-// ฐานข้อมูลวัสดุตั้งต้น 100 ชนิด
-const baseMaterials = [
-  // === พอลิเมอร์ (20) ===
-  { id: 'epoxy resin', name: 'เรซิน (Epoxy)', type: 'Polymer', icon: '🍯' },
-  { id: 'natural rubber', name: 'ยางธรรมชาติ', type: 'Polymer', icon: '🌲' },
-  { id: 'kevlar fabric', name: 'เส้นใยเคฟลาร์', type: 'Polymer', icon: '🧵' },
-  { id: 'nylon fabric', name: 'ไนลอน', type: 'Polymer', icon: '🧦' },
-  { id: 'pvc plastic pipe', name: 'พีวีซี (PVC)', type: 'Polymer', icon: '🚰' },
-  { id: 'pet plastic bottle', name: 'พลาสติก PET', type: 'Polymer', icon: '🍾' },
-  { id: 'teflon coating', name: 'เทฟลอน (PTFE)', type: 'Polymer', icon: '🍳' },
-  { id: 'silicone rubber', name: 'ซิลิโคน', type: 'Polymer', icon: '🧊' },
-  { id: 'polyurethane foam', name: 'โพลียูรีเทน (PU)', type: 'Polymer', icon: '🧽' },
-  { id: 'acrylic glass', name: 'อะคริลิก', type: 'Polymer', icon: '🪧' },
-  { id: 'polycarbonate', name: 'โพลีคาร์บอเนต', type: 'Polymer', icon: '🥽' },
-  { id: 'polystyrene foam', name: 'โพลีสไตรีน (โฟม)', type: 'Polymer', icon: '🥡' },
-  { id: 'polyethylene plastic', name: 'พลาสติก PE', type: 'Polymer', icon: '🛍️' },
-  { id: 'polypropylene plastic', name: 'พลาสติก PP', type: 'Polymer', icon: '🪣' },
-  { id: 'abs plastic', name: 'พลาสติก ABS', type: 'Polymer', icon: '🧱' },
-  { id: 'neoprene fabric', name: 'นีโอพรีน', type: 'Polymer', icon: '🤿' },
-  { id: 'bakelite vintage', name: 'เบกาไลต์', type: 'Polymer', icon: '☎️' },
-  { id: 'melamine resin', name: 'เมลามีน', type: 'Polymer', icon: '🍽️' },
-  { id: 'liquid latex', name: 'น้ำยางพารา', type: 'Polymer', icon: '🧤' },
-  { id: 'pvb plastic film', name: 'ฟิล์ม PVB', type: 'Polymer', icon: '🎞️' },
-
-  // === โลหะ (20) ===
-  { id: 'iron ore', name: 'เหล็กดิบ (Iron)', type: 'Metal', icon: '🪨' },
-  { id: 'steel metal', name: 'เหล็กกล้า (Steel)', type: 'Metal', icon: '🔗' },
-  { id: 'aluminum metal', name: 'อะลูมิเนียม', type: 'Metal', icon: '🛸' },
-  { id: 'copper metal', name: 'ทองแดง', type: 'Metal', icon: '🥉' },
-  { id: 'zinc metal', name: 'สังกะสี', type: 'Metal', icon: '🛖' },
-  { id: 'tin metal', name: 'ดีบุก', type: 'Metal', icon: '🥫' },
-  { id: 'gold metal', name: 'ทองคำ', type: 'Metal', icon: '🏆' },
-  { id: 'silver metal', name: 'เงิน', type: 'Metal', icon: '🥈' },
-  { id: 'platinum metal', name: 'แพลตตินัม', type: 'Metal', icon: '💍' },
-  { id: 'titanium metal', name: 'ไทเทเนียม', type: 'Metal', icon: '🦾' },
-  { id: 'nickel metal', name: 'นิกเกิล', type: 'Metal', icon: '🪙' },
-  { id: 'lead metal', name: 'ตะกั่ว', type: 'Metal', icon: '🔋' },
-  { id: 'chromium metal', name: 'โครเมียม', type: 'Metal', icon: '✨' },
-  { id: 'cobalt metal', name: 'โคบอลต์', type: 'Metal', icon: '🧲' },
-  { id: 'magnesium metal', name: 'แมกนีเซียม', type: 'Metal', icon: '🎇' },
-  { id: 'tungsten metal', name: 'ทังสเตน', type: 'Metal', icon: '💡' },
-  { id: 'vanadium metal', name: 'วาเนเดียม', type: 'Metal', icon: '🔧' },
-  { id: 'manganese metal', name: 'แมงกานีส', type: 'Metal', icon: '🪓' },
-  { id: 'bismuth crystal', name: 'บิสมัท', type: 'Metal', icon: '🌈' },
-  { id: 'gallium metal', name: 'แกลเลียม', type: 'Metal', icon: '🌡️' },
-
-  // === เซรามิก (20) ===
-  { id: 'cement powder', name: 'ปูนซีเมนต์', type: 'Ceramic', icon: '🌪️' },
-  { id: 'glass material', name: 'เนื้อแก้ว', type: 'Ceramic', icon: '🪟' },
-  { id: 'carbon black powder', name: 'คาร์บอนดำ', type: 'Ceramic', icon: '⚫' },
-  { id: 'fiberglass', name: 'เส้นใยแก้ว', type: 'Ceramic', icon: '❄️' },
-  { id: 'natural clay', name: 'ดินเหนียว', type: 'Ceramic', icon: '🏺' },
-  { id: 'red brick', name: 'อิฐมอญ', type: 'Ceramic', icon: '🧱' },
-  { id: 'porcelain ceramic', name: 'พอร์ซเลน', type: 'Ceramic', icon: '☕' },
-  { id: 'alumina powder', name: 'อะลูมินา', type: 'Ceramic', icon: '⚪' },
-  { id: 'zirconia ceramic', name: 'เซอร์โคเนีย', type: 'Ceramic', icon: '🦷' },
-  { id: 'silicon carbide', name: 'ซิลิคอนคาร์ไบด์', type: 'Ceramic', icon: '🖤' },
-  { id: 'boron carbide', name: 'โบรอนคาร์ไบด์', type: 'Ceramic', icon: '🛡️' },
-  { id: 'graphite material', name: 'แกรไฟต์', type: 'Ceramic', icon: '✏️' },
-  { id: 'diamond gemstone', name: 'เพชร', type: 'Ceramic', icon: '💎' },
-  { id: 'quartz crystal', name: 'ควอตซ์', type: 'Ceramic', icon: '🔮' },
-  { id: 'silica powder', name: 'ซิลิกา (ผงแก้ว)', type: 'Ceramic', icon: '⏳' },
-  { id: 'sand', name: 'ทราย', type: 'Ceramic', icon: '🏖️' },
-  { id: 'limestone', name: 'หินปูน', type: 'Ceramic', icon: '⛰️' },
-  { id: 'gypsum material', name: 'ยิปซัม', type: 'Ceramic', icon: '🩹' },
-  { id: 'asbestos mineral', name: 'แร่ใยหิน', type: 'Ceramic', icon: '🌫️' },
-  { id: 'gravel stones', name: 'หินกรวด', type: 'Ceramic', icon: '🪨' },
-
-  // === ธรรมชาติ (20) ===
-  { id: 'wood sawdust', name: 'ผงไม้/ขี้เลื่อย', type: 'Natural', icon: '🪵' },
-  { id: 'paper material', name: 'กระดาษ', type: 'Natural', icon: '📄' },
-  { id: 'cotton fabric', name: 'ฝ้าย', type: 'Natural', icon: '☁️' },
-  { id: 'silk fabric', name: 'ไหม', type: 'Natural', icon: '👘' },
-  { id: 'wool material', name: 'ขนสัตว์', type: 'Natural', icon: '🐑' },
-  { id: 'leather material', name: 'หนัง', type: 'Natural', icon: '👞' },
-  { id: 'hemp fiber', name: 'ใยกัญชง', type: 'Natural', icon: '🌿' },
-  { id: 'bamboo wood', name: 'ไผ่', type: 'Natural', icon: '🎋' },
-  { id: 'cork wood', name: 'ไม้ก๊อก', type: 'Natural', icon: '🍾' },
-  { id: 'seashell', name: 'เปลือกหอย', type: 'Natural', icon: '🐚' },
-  { id: 'bone material', name: 'กระดูก', type: 'Natural', icon: '🦴' },
-  { id: 'ivory material', name: 'งาช้าง', type: 'Natural', icon: '🐘' },
-  { id: 'beeswax', name: 'ขี้ผึ้ง', type: 'Natural', icon: '🕯️️' },
-  { id: 'amber gemstone', name: 'อำพัน', type: 'Natural', icon: '🪨' },
-  { id: 'cellulose fiber', name: 'เซลลูโลส', type: 'Natural', icon: '🔬' },
-  { id: 'starch powder', name: 'แป้ง', type: 'Natural', icon: '🥔' },
-  { id: 'lignin powder', name: 'ลิกนิน', type: 'Natural', icon: '🌳' },
-  { id: 'chitin material', name: 'ไคติน', type: 'Natural', icon: '🦐' },
-  { id: 'gelatin powder', name: 'เจลาติน', type: 'Natural', icon: '🍮' },
-  { id: 'coal', name: 'ถ่านหิน', type: 'Natural', icon: '🪨' },
-
-  // === สารเติมแต่ง / อื่นๆ (20) ===
-  { id: 'water liquid', name: 'น้ำ', type: 'Additive', icon: '💧' },
-  { id: 'oil liquid', name: 'น้ำมัน', type: 'Additive', icon: '🛢️' },
-  { id: 'acid liquid', name: 'กรด', type: 'Additive', icon: '🧪' },
-  { id: 'alkaline liquid', name: 'ด่าง/โซดาไฟ', type: 'Additive', icon: '🧼' },
-  { id: 'salt powder', name: 'เกลือ', type: 'Additive', icon: '🧂' },
-  { id: 'sugar powder', name: 'น้ำตาล', type: 'Additive', icon: '🧊' },
-  { id: 'color pigment', name: 'แม่สี', type: 'Additive', icon: '🎨' },
-  { id: 'sulfur powder', name: 'กำมะถัน', type: 'Additive', icon: '💛' },
-  { id: 'phosphorus powder', name: 'ฟอสฟอรัส', type: 'Additive', icon: '🔥' },
-  { id: 'iodine liquid', name: 'ไอโอดีน', type: 'Additive', icon: '🟣' },
-  { id: 'bleach liquid', name: 'สารฟอกขาว', type: 'Additive', icon: '🥼' },
-  { id: 'yeast powder', name: 'ยีสต์', type: 'Additive', icon: '🦠' },
-  { id: 'baking soda', name: 'เบกกิ้งโซดา', type: 'Additive', icon: '🧁' },
-  { id: 'chemical catalyst', name: 'ตัวเร่งปฏิกิริยา', type: 'Additive', icon: '⚡' },
-  { id: 'antioxidant powder', name: 'สารกันบูด', type: 'Additive', icon: '🛡️' },
-  { id: 'uv stabilizer powder', name: 'สารกันยูวี', type: 'Additive', icon: '😎' },
-  { id: 'plasticizer liquid', name: 'สารเสริมสภาพ', type: 'Additive', icon: '💧' },
-  { id: 'foaming agent', name: 'สารเกิดโฟม', type: 'Additive', icon: '🫧' },
-  { id: 'fire retardant powder', name: 'สารหน่วงไฟ', type: 'Additive', icon: '🧯' },
-  { id: 'chemical hardener', name: 'น้ำยาทำให้แข็ง', type: 'Additive', icon: '🧱' }
-];
-
-// สูตรผสม (รองรับ 2-5 อย่าง) คีย์คือ ID ที่เรียงลำดับตัวอักษร
-const recipes = {
-  // --- ผสม 2 ชนิด ---
-  'carbon black powder,iron ore': { engName: 'Carbon Steel metal', name: 'เหล็กกล้าคาร์บอน (Carbon Steel)', desc: 'ผสมคาร์บอนเข้ากับเหล็กดิบ เพิ่มความแข็งแกร่งอย่างมาก เป็นพื้นฐานของโครงสร้างยุคใหม่', uses: 'โครงสร้างตึก, ชิ้นส่วนรถยนต์', tag: 'โลหะ + เซรามิก' },
-  'copper metal,zinc metal': { engName: 'Brass metal object', name: 'ทองเหลือง (Brass)', desc: 'ทองแดงผสมสังกะสี สวยงามคล้ายทองคำ ทนทานต่อการกัดกร่อน ทนน้ำ', uses: 'เครื่องดนตรี, ก๊อกน้ำ, เครื่องประดับ', tag: 'โลหะ + โลหะ' },
-  'copper metal,tin metal': { engName: 'Bronze metal object', name: 'สำริด (Bronze)', desc: 'โลหะผสมยุคโบราณ แข็งกว่าทองแดงบริสุทธิ์ หล่อขึ้นรูปได้ดี', uses: 'ระฆัง, พระพุทธรูป, เฟือง', tag: 'โลหะ + โลหะ' },
-  'natural rubber,sulfur powder': { engName: 'Vulcanized Rubber tire', name: 'ยางวัลคาไนซ์ (Vulcanized Rubber)', desc: 'การนำยางธรรมชาติมาอบกับกำมะถัน ทำให้ยางคงรูป ไม่ละลายเมื่อร้อน และยืดหยุ่นดีขึ้น', uses: 'พื้นรองเท้า, ท่อยาง, ยางยืด', tag: 'พอลิเมอร์ + สารเติมแต่ง' },
-  'epoxy resin,fiberglass': { engName: 'Fiberglass boat hull', name: 'ไฟเบอร์กลาส (Fiberglass)', desc: 'พลาสติกเสริมใยแก้ว น้ำหนักเบา ขึ้นรูปง่าย มีความแข็งแรง', uses: 'หลังคากระบะ, ตัวถังเรือ', tag: 'พอลิเมอร์ + เซรามิก' },
-  'carbon black powder,epoxy resin': { engName: 'Carbon Fiber CFRP', name: 'คาร์บอนไฟเบอร์ (CFRP)', desc: 'เส้นใยคาร์บอนเคลือบเรซิน แข็งแกร่งกว่าเหล็กแต่น้ำหนักเบากว่ามาก', uses: 'จักรยาน, ชิ้นส่วนซุปเปอร์คาร์', tag: 'เซรามิก + พอลิเมอร์' },
-  'epoxy resin,wood sawdust': { engName: 'Wood Plastic Composite flooring', name: 'ไม้พลาสติก (WPC)', desc: 'ผงไม้ผสมพลาสติก ผิวสัมผัสเหมือนไม้แต่ทนน้ำ ไม่ผุพัง', uses: 'ระเบียงบ้าน, พื้นไม้เทียม', tag: 'พอลิเมอร์ + ธรรมชาติ' },
-  'natural clay,water liquid': { engName: 'Wet sculpting clay', name: 'ดินเหนียวปั้นได้', desc: 'ดินเหนียวที่เติมน้ำในสัดส่วนพอเหมาะ ทำให้ขึ้นรูปทรงต่างๆ ได้', uses: 'เครื่องปั้นดินเผาก่อนเผา', tag: 'เซรามิก + สารเติมแต่ง' },
-  'cement powder,sand': { engName: 'Cement mortar', name: 'ปูนทราย (มอร์ตาร์)', desc: 'ปูนซีเมนต์ผสมทรายและน้ำ ใช้สำหรับการก่อและฉาบ', uses: 'ก่ออิฐ, ฉาบผนัง', tag: 'เซรามิก + เซรามิก' },
-  'paper material,beeswax': { engName: 'Wax paper packaging', name: 'กระดาษไข (Wax Paper)', desc: 'กระดาษเคลือบขี้ผึ้ง กันน้ำและกันความชื้น', uses: 'ห่ออาหาร, กระดาษรองอบ', tag: 'ธรรมชาติ + ธรรมชาติ' },
-  'chemical hardener,silicone rubber': { engName: 'Silicone mold for resin', name: 'ซิลิโคนหล่อแบบ', desc: 'ยางซิลิโคนผสมน้ำยาทำให้แข็งตัว ใช้ทำแม่พิมพ์ที่มีความละเอียดสูง', uses: 'แม่พิมพ์สบู่, เรซิน, โมเดล', tag: 'พอลิเมอร์ + สารเติมแต่ง' },
-  'acid liquid,lead metal': { engName: 'Lead acid car battery', name: 'แบตเตอรี่ตะกั่วกรด', desc: 'แผ่นตะกั่วจุ่มในกรดซัลฟิวริก เกิดปฏิกิริยาเคมีกักเก็บไฟฟ้าได้', uses: 'แบตเตอรี่รถยนต์', tag: 'โลหะ + สารเติมแต่ง' },
-
-  // --- ผสม 3 ชนิด ---
-  'carbon black powder,chromium metal,iron ore': { engName: 'Stainless Steel cookware', name: 'สแตนเลส (Stainless Steel)', desc: 'เหล็กกล้าผสมโครเมียม ทำให้เกิดฟิล์มป้องกันสนิม', uses: 'เครื่องครัว, อุปกรณ์การแพทย์', tag: 'โลหะ (3 ชนิด)' },
-  'carbon black powder,natural rubber,sulfur powder': { engName: 'Car tire tread', name: 'ยางรถยนต์เสริมคาร์บอน', desc: 'ยางวัลคาไนซ์ผสมเขม่าคาร์บอน เพิ่มความทนทานต่อการเสียดสี ทนทานต่อถนน', uses: 'ล้อรถยนต์ทั่วไป', tag: 'พอลิเมอร์ + เซรามิก + สารเคมี' },
-  'cement powder,sand,water liquid': { engName: 'Wet concrete mixing', name: 'ปูนมอร์ตาร์เปียก', desc: 'ปูนซีเมนต์ ทราย และน้ำ คลุกเคล้าจนเข้ากัน พร้อมนำไปใช้งานก่อฉาบ', uses: 'ก่อผนังอิฐ, ปรับระดับพื้น', tag: 'เซรามิก + ธรรมชาติ/สาร' },
-  'aluminum metal,epoxy resin,fiberglass': { engName: 'GLARE aviation material fuselage', name: 'แกลร์ (GLARE)', desc: 'สลับชั้นอะลูมิเนียมกับไฟเบอร์กลาส ทนทานต่อการล้าและรอยร้าว', uses: 'ลำตัวเครื่องบินโดยสาร', tag: 'โลหะ + เซรามิก + พอลิเมอร์' },
-  'epoxy resin,glass material,pvb plastic film': { engName: 'Laminated glass windshield', name: 'กระจกลามิเนต (Laminated Glass)', desc: 'กระจก 2 แผ่นประกบฟิล์ม PVB ด้วยเรซิน เมื่อแตกจะไม่ร่วงหล่น', uses: 'กระจกหน้ารถยนต์, หน้าต่างตึกสูง', tag: 'เซรามิก + พอลิเมอร์' },
-  'copper metal,gold metal,silver metal': { engName: 'Rose Gold jewelry ring', name: 'ทองคำ 18K (Pink/Yellow Gold)', desc: 'ทองคำบริสุทธิ์นิ่มเกินไป ต้องผสมเงินและทองแดงเพื่อให้แข็งแรงพอจะทำเครื่องประดับ', uses: 'แหวน, สร้อยคอ', tag: 'อัลลอยด์ (โลหะ 3 ชนิด)' },
-  'fire retardant powder,natural clay,water liquid': { engName: 'Fire Brick furnace', name: 'อิฐทนไฟ (Fire Brick)', desc: 'ดินเหนียวผสมสารหน่วงไฟและน้ำ ทนความร้อนสูงมาก ไม่หลอมละลาย', uses: 'เตาหลอมโลหะ, เตาอบพิซซ่า', tag: 'เซรามิกพิเศษ' },
-  'chemical hardener,color pigment,silicone rubber': { engName: 'Colorful Silicone Mold', name: 'ซิลิโคนแม่พิมพ์สีสัน', desc: 'เพิ่มแม่สีเข้าไปในกระบวนการหล่อแม่พิมพ์ เพื่อจำแนกประเภทความแข็งของซิลิโคน', uses: 'อุตสาหกรรมหล่อพลาสติก', tag: 'พอลิเมอร์ประยุกต์' },
-
-  // --- ผสม 4 ชนิด ---
-  'cement powder,gravel stones,sand,water liquid': { engName: 'Concrete road surface', name: 'คอนกรีต (Concrete)', desc: 'ส่วนผสมของหิน ทราย ปูนซีเมนต์ และน้ำ แข็งตัวกลายเป็นหินเทียมที่รับแรงกดได้มหาศาล', uses: 'พื้นถนน, ฐานราก', tag: 'วัสดุผสม (เซรามิกหลัก)' },
-  'carbon black powder,chromium metal,iron ore,nickel metal': { engName: 'Industrial chemical tank stainless steel', name: 'สแตนเลสเกรดออสเทนนิติก (304/316)', desc: 'เพิ่มนิกเกิลเข้าไปในสแตนเลส ทำให้ทนการกัดกร่อนจากกรดและเกลือได้ดีเยี่ยม', uses: 'แทงก์น้ำสารเคมี, อุปกรณ์เรือ', tag: 'ซุปเปอร์อัลลอยด์' },
-  'epoxy resin,kevlar fabric,nylon fabric,zirconia ceramic': { engName: 'Military bulletproof vest composite', name: 'เกราะกันกระสุนคอมโพสิต', desc: 'แผ่นเซรามิกรับแรงกระแทก ซ้อนด้วยเคฟลาร์เหนียว และไนลอนเคลือบเรซิน', uses: 'เสื้อเกราะทหารระดับสูง', tag: 'Advanced Composite' },
-  'carbon black powder,natural rubber,steel metal,sulfur powder': { engName: 'Steel-belted radial tire section', name: 'ยางเรเดียลเสริมใยเหล็ก', desc: 'ยางรถยนต์ที่มีการฝังลวดเหล็กกล้าเข้าไปด้านใน เพิ่มความต้านทานการระเบิด', uses: 'ยางรถสปอร์ต, รถบรรทุก', tag: 'Polymer + Metal Composite' },
-
-  // --- ผสม 5 ชนิด (Max) ---
-  'cement powder,gravel stones,iron ore,sand,water liquid': { engName: 'Reinforced concrete structure building', name: 'คอนกรีตเสริมเหล็ก (Reinforced Concrete)', desc: 'สุดยอดวัสดุก่อสร้าง! คอนกรีตรับแรงอัด เหล็กรับแรงดึง ประกอบกันเป็นโครงสร้างที่ตึกระฟ้าขาดไม่ได้', uses: 'ตึกระฟ้า, สะพานแขวน, เขื่อน', tag: 'วัสดุผสมระดับโครงสร้าง (Macro-composite)' },
-  'aluminum metal,copper metal,magnesium metal,manganese metal,zinc metal': { engName: 'Aerospace Duralumin satellite part', name: 'ดูราลูมินเกรดอวกาศ (Aerospace Duralumin)', desc: 'โลหะผสมอะลูมิเนียมขั้นสูงที่ควบคุมสัดส่วนธาตุต่างๆ อย่างแม่นยำ เบาแต่ทนทานสุดยอด', uses: 'กระสวยอวกาศ, ดาวเทียม', tag: 'Aerospace Alloy' },
-};
-
-// สูตรแนะนำ (Recommended Recipes)
-const RECOMMENDED_RECIPES = [
-  'carbon black powder,iron ore', // Carbon Steel
-  'copper metal,zinc metal', // Brass
-  'epoxy resin,fiberglass', // Fiberglass
-  'cement powder,gravel stones,sand,water liquid' // Concrete
-];
-
-const MaterialImage = ({ prompt, alt = 'Material', className, type = 'material' }) => {
-  const [imgSrc, setImgSrc] = useState('');
-  const [imgError, setImgError] = useState(false);
-  
-  useEffect(() => {
-    // เปลี่ยนมาใช้ API ค้นหาภาพจริงจากอินเทอร์เน็ต (Bing Image Search Thumbnail)
-    const finalPrompt = type === 'material' 
-        ? `${prompt} raw material real photo`
-        : `${prompt} real object product photography`;
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Materials Lab - ห้องทดลองวัสดุเสมือนจริง</title>
     
-    const safePrompt = encodeURIComponent(finalPrompt);
-    // ดึงภาพ Thumbnail ขนาด 300x300 แบบตัดสี่เหลี่ยมจัตุรัสพอดีจากเว็บ
-    setImgSrc(`https://tse2.mm.bing.net/th?q=${safePrompt}&w=300&h=300&c=7&rs=1&p=0&dpr=1&pid=1.7`);
-    setImgError(false); // รีเซ็ตสถานะ Error เมื่อเปลี่ยนรูปใหม่
-  }, [prompt, type]);
-
-  // หากภาพโหลดไม่สำเร็จ ให้แสดงกล่องข้อความแทนเพื่อป้องกันแอประเบิด (จอขาว)
-  if (imgError || !imgSrc) {
-    return (
-      <div className={`flex items-center justify-center bg-slate-800 text-slate-500 font-bold text-xl ${className}`}>
-        {alt ? alt.charAt(0).toUpperCase() : '?'}
-      </div>
-    );
-  }
-
-  return (
-    <img 
-      src={imgSrc} 
-      alt={alt} 
-      className={`object-cover bg-slate-900 ${className}`}
-      loading="lazy"
-      onError={() => setImgError(true)} // ใช้ React State จัดการ Error แทนการแก้ DOM
-    />
-  );
-};
-
-export default function App() {
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [mixResult, setMixResult] = useState(null);
-  const [isMixing, setIsMixing] = useState(false);
-  const [notification, setNotification] = useState("");
-  const [discoveredRecipes, setDiscoveredRecipes] = useState(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
-
-  const workbenchRef = useRef(null);
-  const resultRef = useRef(null);
-
-  const totalRecipes = Object.keys(recipes).length;
-  const MAX_MIX_ITEMS = 5;
-
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(""), 3500);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
-
-  const filteredMaterials = useMemo(() => {
-    return baseMaterials.filter(mat => {
-      const matchesSearch = mat.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = activeCategory === "All" || mat.type === activeCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [searchQuery, activeCategory]);
-
-  const handleSelectItem = (material) => {
-    setMixResult(null); 
-    if (selectedItems.length >= MAX_MIX_ITEMS) {
-      setNotification(`🧪 ช่องผสมเต็มแล้ว! (สูงสุด ${MAX_MIX_ITEMS} ชนิด) กรุณาเอาวัสดุออก หรือกด 'เริ่มสังเคราะห์'`);
-      return;
-    }
-    if (selectedItems.find(item => item.id === material.id)) {
-       setNotification("⚠️ คุณเลือกวัสดุนี้ไปแล้ว ลองหยิบวัสดุอื่นมาผสมกันดูนะ");
-       return;
-    }
-    setSelectedItems([...selectedItems, material]);
-  };
-
-  const handleRemoveItem = (indexToRemove) => {
-    setSelectedItems(selectedItems.filter((_, index) => index !== indexToRemove));
-    setMixResult(null);
-  };
-
-  const handleMix = () => {
-    if (selectedItems.length < 2) {
-      setNotification("ต้องเลือกวัสดุอย่างน้อย 2 ชนิดเพื่อทำการผสม!");
-      return;
-    }
-    setIsMixing(true);
-    setMixResult(null);
-
-    setTimeout(() => {
-      setIsMixing(false);
-      // Sort IDs alphabetically to match the recipe keys
-      const ids = selectedItems.map(item => item.id).sort();
-      const recipeKey = ids.join(',');
-      
-      if (recipes[recipeKey]) {
-        setMixResult({ success: true, ...recipes[recipeKey] });
-        setDiscoveredRecipes(prev => new Set(prev).add(recipeKey));
-      } else {
-        // Fallback for failed mixes
-        let failMessage = 'ปฏิกิริยาไม่เสถียร! วัสดุเหล่านี้ผสมกันไม่ได้เกิดเป็นวัสดุที่ใช้งานได้จริง ลองจับคู่ใหม่ดูนะ';
-        let failEngName = 'pile of toxic chemical sludge, dirty';
-        if (selectedItems.length > 3) {
-            failMessage = 'ส่วนผสมซับซ้อนเกินไปและขัดแย้งกันเอง! กลายเป็นก้อนของแข็งไร้ประโยชน์จากห้องแล็บ';
-            failEngName = 'broken pieces of unidentified grey solid material waste';
-        }
-        setMixResult({ 
-          success: false, 
-          name: 'ตะกอนสารเคมี (ล้มเหลว)', 
-          engName: failEngName,
-          desc: failMessage
-        });
-      }
-
-      // เลื่อนหน้าจอลงมาดูผลลัพธ์ (รองรับมือถือ)
-      setTimeout(() => {
-         resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 100);
-
-    }, 2500); // 2.5 second animation
-  };
-
-  const handleReset = () => {
-    setSelectedItems([]);
-    setMixResult(null);
-    setNotification("");
-  };
-
-  const handleAutoFill = (recipeKey) => {
-    const materialIds = recipeKey.split(',');
-    const itemsToSelect = materialIds.map(id => baseMaterials.find(m => m.id === id)).filter(Boolean);
-    setSelectedItems(itemsToSelect);
-    setMixResult(null);
-    setNotification("✅ จัดเตรียมวัตถุดิบสำหรับสูตรแนะนำเรียบร้อยแล้ว กด 'เริ่มสังเคราะห์' ได้เลย!");
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    // เลื่อนหน้าจอขึ้นไปที่โต๊ะทดลองสำหรับมือถือ/iPad
-    setTimeout(() => {
-       workbenchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  };
-
-  const getCategoryStyles = (type) => {
-      const cat = Object.values(CATEGORIES).find(c => c.id === type);
-      return cat || { color: 'from-gray-500 to-gray-600', text: 'text-gray-400', border: 'border-gray-500' };
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-950 font-sans pb-12 overflow-x-hidden text-gray-100 selection:bg-cyan-500 selection:text-white">
-      {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 shadow-2xl relative overflow-hidden sticky top-0 z-50">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-indigo-500 to-fuchsia-500"></div>
-        <div className="max-w-7xl mx-auto p-3 md:p-6 flex flex-col md:flex-row items-center justify-between relative z-10 gap-4">
-          <div className="flex items-center gap-3 md:gap-4">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl md:text-3xl shadow-[0_0_15px_rgba(34,212,238,0.2)]">
-                🔬
-            </div>
-            <div>
-              <h1 className="text-xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400 tracking-tight">
-                Real Materials Lab
-              </h1>
-              <p className="text-slate-400 text-xs md:text-sm">ศูนย์วิจัยและสังเคราะห์วัสดุขั้นสูง (ภาพเสมือนจริง)</p>
-            </div>
-          </div>
-          
-          <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-2 md:p-3 border border-slate-700 shadow-inner flex flex-row md:flex-col items-center justify-between md:justify-center min-w-[200px] md:min-w-[220px] w-full md:w-auto">
-            <span className="text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-0 md:mb-1">สูตรลับที่ค้นพบ</span>
-            <div className="flex items-baseline gap-1 md:gap-2">
-              <span className="text-xl md:text-2xl font-black text-cyan-400">{discoveredRecipes.size}</span>
-              <span className="text-xs md:text-sm text-slate-500 font-bold">/ {totalRecipes}</span>
-            </div>
-            <div className="w-full bg-slate-900 rounded-full h-1.5 md:mt-2 overflow-hidden hidden md:block">
-              <div 
-                className="bg-gradient-to-r from-cyan-400 to-fuchsia-500 h-full rounded-full transition-all duration-700" 
-                style={{ width: `${(discoveredRecipes.size / totalRecipes) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto mt-4 md:mt-6 px-3 md:px-4 flex flex-col gap-4 md:gap-6">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
         
-        {/* Inventory Section (Top) */}
-        <section className="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden flex flex-col max-h-[400px] md:max-h-[450px]">
-          {/* Inventory Header & Controls */}
-          <div className="p-3 md:p-4 bg-slate-800/50 border-b border-slate-700/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 md:gap-4">
-            <h2 className="font-bold text-base md:text-lg text-slate-200 flex items-center gap-2 shrink-0">
-               <span className="text-lg md:text-xl">📦</span> คลังวัตถุดิบ <span className="text-slate-500 font-normal text-xs md:text-sm">({baseMaterials.length} ชนิด)</span>
-            </h2>
-            
-            <div className="flex flex-col md:flex-row w-full lg:w-auto gap-3 items-center min-w-0">
-               {/* Categories - Scrollable horizontally on mobile */}
-               <div className="flex w-full lg:w-auto overflow-x-auto hide-scrollbar pb-1 snap-x justify-start md:justify-center gap-2 items-center">
-                  <button onClick={() => setActiveCategory("All")} className={`shrink-0 px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all snap-start ${activeCategory === "All" ? 'bg-slate-700 text-white shadow-md' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
-                     All
-                  </button>
-                  {Object.values(CATEGORIES).map(cat => (
-                      <button 
-                         key={cat.id} 
-                         onClick={() => setActiveCategory(cat.id)}
-                         className={`shrink-0 px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all snap-start
-                         ${activeCategory === cat.id ? `bg-slate-800 border ${cat.border} ${cat.text} shadow-[0_0_10px_rgba(255,255,255,0.05)]` : 'bg-slate-900/50 border border-transparent text-slate-500 hover:text-slate-300'}`}
-                      >
-                         <span>{cat.icon}</span> {cat.name}
-                      </button>
-                  ))}
-               </div>
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        @media (min-width: 768px) { .custom-scrollbar::-webkit-scrollbar { width: 8px; } }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(71, 85, 105, 1); }
 
-               {/* Search */}
-               <div className="relative w-full md:w-56 shrink-0">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
-                  <input 
-                     type="text" 
-                     placeholder="ค้นหาวัสดุ..." 
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                     className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-xl pl-9 pr-4 py-1.5 md:py-2 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-xs md:text-sm"
-                  />
-               </div>
-            </div>
-          </div>
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-          {/* Inventory Grid (Scrollable) */}
-          <div className="p-3 md:p-4 overflow-y-auto custom-scrollbar flex-1 bg-slate-900/50">
-             {filteredMaterials.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-sm">ไม่พบวัสดุที่ค้นหา</div>
-             ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-4">
-                  {filteredMaterials.map((mat) => {
-                    const styles = getCategoryStyles(mat.type);
-                    const isSelected = selectedItems.find(item => item.id === mat.id);
-                    return (
-                      <button
-                        key={mat.id}
-                        onClick={() => handleSelectItem(mat)}
-                        disabled={isSelected}
-                        className={`relative flex flex-col items-center justify-start p-2 md:p-2.5 rounded-xl border transition-all duration-300 group overflow-hidden
-                           ${isSelected 
-                              ? 'border-slate-700 bg-slate-900 opacity-40 cursor-not-allowed scale-95 grayscale' 
-                              : `border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-cyan-500 hover:-translate-y-1 hover:shadow-lg`}
-                        `}
-                      >
-                        {/* Real Image Container */}
-                        <div className="w-14 h-14 sm:w-20 sm:h-20 mb-1.5 md:mb-2 rounded-lg overflow-hidden border border-slate-600/50 relative z-10 shadow-inner group-hover:scale-105 transition-transform bg-slate-900 shrink-0">
-                           <MaterialImage prompt={mat.id} alt={mat.name} type="material" className="w-full h-full" />
-                           {/* Small Category Badge */}
-                           <div className="absolute top-0 right-0 bg-black/70 backdrop-blur-sm text-[10px] px-1 py-0.5 rounded-bl-lg border-b border-l border-slate-600/50 z-20">
-                              {mat.icon}
-                           </div>
-                           
-                           {isSelected && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-30">
-                                 <span className="text-xl md:text-2xl drop-shadow-lg">✅</span>
-                              </div>
-                           )}
-                        </div>
-                        
-                        <div className="text-[10px] md:text-xs font-bold text-slate-300 text-center leading-tight z-10 px-0.5 md:px-1 w-full truncate">
-                           {mat.name}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-             )}
-          </div>
-        </section>
-
-        {/* Lab Workbench Section */}
-        <section ref={workbenchRef} className="bg-slate-900 rounded-3xl shadow-2xl border border-slate-800 overflow-hidden relative">
-          
-          {/* Notification Toast */}
-          {notification && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500/95 backdrop-blur text-white px-4 py-2 md:px-5 md:py-2.5 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.4)] z-20 animate-[slide-down_0.3s_ease-out] text-center font-medium border border-red-400 text-xs md:text-sm whitespace-nowrap max-w-[90vw] overflow-hidden text-ellipsis">
-              {notification}
-            </div>
-          )}
-
-          {/* Workbench Area */}
-          <div className="p-4 md:p-8 relative min-h-[300px] md:min-h-[350px] flex flex-col items-center justify-center">
-            {/* Background Grid Pattern */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-            
-            {/* Top right reset button */}
-            <button onClick={handleReset} className="absolute top-3 right-3 md:top-4 md:right-4 text-[10px] md:text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 px-2 py-1 md:px-3 md:py-1.5 rounded-lg transition-colors border border-slate-700 flex items-center gap-1.5 z-20 shadow-md">
-               🔄 ล้างโต๊ะผสม
-            </button>
-
-            {/* Dynamic Slots */}
-            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-5 relative z-10 w-full max-w-4xl min-h-[120px] md:min-h-[160px]">
-               {selectedItems.map((item, index) => {
-                  const styles = getCategoryStyles(item.type);
-                  return (
-                    <React.Fragment key={`slot-${index}`}>
-                       {/* Operator (+) before item, except first */}
-                       {index > 0 && (
-                          <div className="text-xl md:text-2xl font-black text-slate-600 animate-[pop-in_0.2s]">➕</div>
-                       )}
-                       
-                       {/* The Slot with Image */}
-                       <div 
-                         onClick={() => handleRemoveItem(index)}
-                         className={`w-16 h-16 sm:w-20 sm:h-20 md:w-32 md:h-32 rounded-xl md:rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-[2px] md:border-[3px] relative group animate-[pop-in_0.3s_ease-out] overflow-hidden bg-slate-800 shadow-[0_0_20px_rgba(0,0,0,0.4)] hover:shadow-red-500/30 hover:border-red-500/50`}
-                         style={{ borderColor: 'rgba(255,255,255,0.05)' }}
-                       >
-                         {/* Background Image of the selected material */}
-                         <MaterialImage prompt={item.id} alt={item.name} type="material" className="absolute inset-0 w-full h-full opacity-60 group-hover:opacity-20 transition-opacity" />
-                         
-                         {/* Label overlays */}
-                         <span className="text-xl md:text-3xl z-10 bg-black/60 p-1 md:p-1.5 rounded-full backdrop-blur-md border border-white/10 mb-0.5 md:mb-2 shadow-lg">{item.icon}</span>
-                         <span className={`text-[8px] md:text-xs font-bold text-center px-1 md:px-2 py-0.5 z-10 bg-black/70 backdrop-blur-md rounded border border-white/10 text-white shadow-lg truncate w-11/12`}>{item.name}</span>
-                         
-                         {/* Remove Overlay */}
-                         <div className="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20 backdrop-blur-sm">
-                            <span className="text-white font-bold text-[10px] md:text-sm drop-shadow-md">ออก ❌</span>
-                         </div>
-                       </div>
-                    </React.Fragment>
-                  );
-               })}
-
-               {/* Empty Slot for adding more (up to MAX) */}
-               {selectedItems.length < MAX_MIX_ITEMS && (
-                  <React.Fragment>
-                     {selectedItems.length > 0 && (
-                        <div className="text-xl md:text-2xl font-black text-slate-700">➕</div>
-                     )}
-                     <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-32 md:h-32 rounded-xl md:rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-600 bg-slate-900/50 text-slate-500 shadow-inner">
-                        <span className="text-[10px] md:text-sm font-medium">เพิ่มวัสดุ</span>
-                        <span className="text-[8px] md:text-xs mt-0.5 md:mt-1">({selectedItems.length}/{MAX_MIX_ITEMS})</span>
-                     </div>
-                  </React.Fragment>
-               )}
-            </div>
-
-            {/* Mix Button */}
-            <div className="mt-8 md:mt-12 z-10">
-              <button
-                onClick={handleMix}
-                disabled={selectedItems.length < 2 || isMixing}
-                className={`relative overflow-hidden px-6 md:px-10 py-3 md:py-3.5 rounded-2xl font-extrabold text-sm md:text-lg tracking-wide shadow-2xl transition-all duration-300 transform 
-                  ${selectedItems.length >= 2 && !isMixing
-                    ? 'bg-slate-800 text-white border border-cyan-500/50 hover:scale-105 hover:shadow-[0_0_40px_rgba(34,212,238,0.5)] group' 
-                    : 'bg-slate-900 text-slate-600 cursor-not-allowed border border-slate-800'}`}
-              >
-                {/* Active Button Background Gradient */}
-                {selectedItems.length >= 2 && !isMixing && (
-                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity"></div>
-                )}
-
-                {isMixing ? (
-                  <span className="flex items-center gap-2 md:gap-3 text-cyan-300">
-                     <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
-                     กำลังประมวลผล...
-                  </span>
-                ) : (
-                  <span className="relative z-10 flex items-center gap-1.5 md:gap-2">
-                     <span className="text-lg md:text-xl">✨</span> เริ่มสังเคราะห์ 
-                     <span className="bg-black/30 text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-md ml-1 shadow-inner border border-white/10">{selectedItems.length} ชนิด</span>
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-          
-          {/* Result Section */}
-          <div ref={resultRef} className="transition-all duration-500 bg-slate-950 border-t border-slate-800 relative">
-            {!isMixing && !mixResult && (
-               <div className="h-[150px] md:h-[200px] flex items-center justify-center text-slate-600 text-xs md:text-sm italic px-4 text-center">
-                  ลากหรือคลิกวัสดุด้านบน เพื่อเริ่มการทดลอง...
-               </div>
-            )}
-
-            {isMixing && (
-              <div className="h-[300px] md:h-[350px] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm z-10">
-                <div className="relative w-20 h-20 md:w-24 md:h-24">
-                   <div className="absolute inset-0 border-[4px] md:border-[6px] border-slate-800 rounded-full"></div>
-                   <div className="absolute inset-0 border-[4px] md:border-[6px] border-cyan-500 border-t-transparent border-l-transparent rounded-full animate-[spin_1s_linear_infinite]"></div>
-                   <div className="absolute inset-2 md:inset-3 border-[4px] md:border-[6px] border-fuchsia-500 border-b-transparent border-r-transparent rounded-full animate-[spin_1.5s_linear_reverse_infinite]"></div>
-                   <div className="absolute inset-0 flex items-center justify-center text-2xl md:text-3xl animate-pulse">🧬</div>
-                </div>
-                <p className="text-cyan-400 font-bold mt-4 md:mt-6 tracking-widest uppercase text-xs md:text-sm animate-pulse">Synthesizing Materials...</p>
-              </div>
-            )}
-
-            {mixResult && !isMixing && (
-              <div className={`p-5 md:p-10 w-full min-h-[300px] md:min-h-[350px] animate-[slide-up_0.5s_ease-out] bg-gradient-to-br ${mixResult.success ? 'from-cyan-950/90 to-indigo-950/90' : 'from-red-950/90 to-orange-950/90'} flex flex-col justify-center`}>
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 max-w-4xl mx-auto w-full">
-                  
-                  {/* Result Image Container (Real Image) */}
-                  <div className={`relative flex items-center justify-center w-40 h-40 md:w-64 md:h-64 rounded-2xl md:rounded-3xl shrink-0 overflow-hidden border-4
-                     ${mixResult.success ? 'border-cyan-500/40 shadow-[0_0_50px_rgba(34,212,238,0.3)]' : 'border-red-500/40 shadow-[0_0_50px_rgba(239,68,68,0.3)]'}
-                  `}>
-                    <MaterialImage 
-                       prompt={mixResult.engName || mixResult.name} 
-                       alt={mixResult.name} 
-                       type="product" 
-                       className={`w-full h-full transform hover:scale-110 transition-transform duration-700 ${!mixResult.success && 'grayscale contrast-125 brightness-75'}`} 
-                    />
-                    
-                    {mixResult.success && (
-                       <div className="absolute -top-2 -right-2 md:-top-3 md:-right-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-yellow-950 text-[10px] md:text-xs font-black px-3 py-1 md:px-4 md:py-1.5 rounded-full shadow-lg transform rotate-12 uppercase tracking-wide border border-yellow-200 z-10">
-                         สำเร็จ!
-                       </div>
-                    )}
-                  </div>
-
-                  {/* Result Details */}
-                  <div className="flex-1 text-center md:text-left w-full">
-                    <div className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 mb-4">
-                       <h3 className={`text-2xl md:text-4xl font-extrabold tracking-tight ${mixResult.success ? 'text-white' : 'text-red-400'}`}>
-                         {mixResult.name}
-                       </h3>
-                       {mixResult.success && (
-                          <span className="bg-indigo-500/20 border border-indigo-500/50 text-indigo-300 text-[10px] md:text-xs px-2.5 py-1 rounded-full font-bold shadow-inner">
-                             {mixResult.tag}
-                          </span>
-                       )}
-                    </div>
-                    
-                    <p className="text-slate-300 text-sm md:text-lg mb-5 md:mb-6 leading-relaxed bg-black/30 p-4 md:p-5 rounded-xl md:rounded-2xl border border-white/5 backdrop-blur-sm shadow-inner text-left">
-                      {mixResult.desc}
-                    </p>
-                    
-                    {mixResult.success && (
-                      <div className="flex items-start gap-3 md:gap-4 bg-cyan-900/30 p-4 md:p-5 rounded-xl md:rounded-2xl border border-cyan-500/30 shadow-lg relative overflow-hidden text-left">
-                        <div className="absolute top-0 right-0 w-24 h-24 md:w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                        <div className="text-2xl md:text-3xl mt-0.5 md:mt-1 drop-shadow-md shrink-0">🛠️</div>
-                        <div className="relative z-10">
-                           <strong className="text-cyan-400 block mb-1 text-xs md:text-sm uppercase tracking-wide">การประยุกต์ใช้งาน:</strong>
-                           <span className="text-slate-200 leading-snug block text-sm md:text-lg">{mixResult.uses}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Recommended Recipes Section */}
-        <section className="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl p-6 md:p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">💡</span>
-            <div>
-               <h2 className="text-xl font-bold text-slate-200">แนะนำสูตรวัสดุผสม (Recommended Composites)</h2>
-               <p className="text-slate-400 text-sm">ไม่รู้จะเริ่มตรงไหน? ลองคลิกเลือกสูตรยอดนิยมเหล่านี้เพื่อจัดเตรียมวัตถุดิบอัตโนมัติ</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-             {RECOMMENDED_RECIPES.map((recipeKey) => {
-                const recipeInfo = recipes[recipeKey];
-                const isDiscovered = discoveredRecipes.has(recipeKey);
-                
-                return (
-                   <div key={recipeKey} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden flex flex-col hover:border-cyan-500/50 hover:bg-slate-800 transition-all group">
-                      <div className="h-40 relative overflow-hidden bg-slate-900 border-b border-slate-700/50">
-                         <MaterialImage 
-                            prompt={recipeInfo.engName} 
-                            alt={recipeInfo.name} 
-                            type="product" 
-                            className="w-full h-full opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" 
-                         />
-                         {isDiscovered && (
-                            <div className="absolute top-3 right-3 bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg backdrop-blur-sm z-10 flex items-center gap-1">
-                               <span>✅</span> ปลดล็อกแล้ว
-                            </div>
-                         )}
-                      </div>
-                      <div className="p-4 flex flex-col flex-1">
-                         <h3 className="font-bold text-cyan-400 text-lg mb-1">{recipeInfo.name}</h3>
-                         <p className="text-xs text-slate-400 mb-4 line-clamp-2 leading-relaxed">{recipeInfo.desc}</p>
-                         <button 
-                            onClick={() => handleAutoFill(recipeKey)}
-                            className="mt-auto w-full py-2 bg-slate-700 hover:bg-cyan-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-md border border-slate-600 hover:border-cyan-400"
-                         >
-                            ลองผสมสูตรนี้ 🧪
-                         </button>
-                      </div>
-                   </div>
-                );
-             })}
-          </div>
-        </section>
-
-      </main>
-      
-      {/* Footer / Credit */}
-      <footer className="mt-12 pb-6 text-center w-full relative z-10">
-        <p className="text-slate-400 text-sm font-medium px-4 py-2 bg-slate-900/50 inline-block rounded-full border border-slate-800/50 shadow-inner">
-          ✨ พัฒนาโดย <span className="text-cyan-400 font-bold tracking-wide">Mr.Metawat Phongsaphang</span> ✨
-        </p>
-      </footer>
-      
-      {/* Global Styles */}
-      <style dangerouslySetInnerHTML={{__html: `
-        /* Custom Scrollbar for Inventory */
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        @media (min-width: 768px) {
-          .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-          }
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(15, 23, 42, 0.5);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(51, 65, 85, 0.8);
-          border-radius: 10px;
-          border: 1px solid rgba(255,255,255,0.05);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(71, 85, 105, 1);
-        }
-
-        /* Hide scrollbar for categories on mobile */
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-
+        /* Animations */
         @keyframes slide-down {
-          0% { opacity: 0; transform: translate(-50%, -20px); }
-          100% { opacity: 1; transform: translate(-50%, 0); }
+            0% { opacity: 0; transform: translate(-50%, -20px); }
+            100% { opacity: 1; transform: translate(-50%, 0); }
         }
         @keyframes slide-up {
-          0% { opacity: 0; transform: translateY(20px); }
-          100% { opacity: 1; transform: translateY(0); }
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
         @keyframes pop-in {
-          0% { opacity: 0; transform: scale(0.5); }
-          70% { transform: scale(1.1); }
-          100% { opacity: 1; transform: scale(1); }
+            0% { opacity: 0; transform: scale(0.5); }
+            70% { transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
         }
-      `}} />
-    </div>
-  );
-}  { id: 'iron ore', name: 'เหล็กดิบ (Iron)', type: 'Metal', icon: '🪨' },
-  { id: 'steel metal', name: 'เหล็กกล้า (Steel)', type: 'Metal', icon: '🔗' },
-  { id: 'aluminum metal', name: 'อะลูมิเนียม', type: 'Metal', icon: '🛸' },
-  { id: 'copper metal', name: 'ทองแดง', type: 'Metal', icon: '🥉' },
-  { id: 'zinc metal', name: 'สังกะสี', type: 'Metal', icon: '🛖' },
-  { id: 'tin metal', name: 'ดีบุก', type: 'Metal', icon: '🥫' },
-  { id: 'gold metal', name: 'ทองคำ', type: 'Metal', icon: '🏆' },
-  { id: 'silver metal', name: 'เงิน', type: 'Metal', icon: '🥈' },
-  { id: 'platinum metal', name: 'แพลตตินัม', type: 'Metal', icon: '💍' },
-  { id: 'titanium metal', name: 'ไทเทเนียม', type: 'Metal', icon: '🦾' },
-  { id: 'nickel metal', name: 'นิกเกิล', type: 'Metal', icon: '🪙' },
-  { id: 'lead metal', name: 'ตะกั่ว', type: 'Metal', icon: '🔋' },
-  { id: 'chromium metal', name: 'โครเมียม', type: 'Metal', icon: '✨' },
-  { id: 'cobalt metal', name: 'โคบอลต์', type: 'Metal', icon: '🧲' },
-  { id: 'magnesium metal', name: 'แมกนีเซียม', type: 'Metal', icon: '🎇' },
-  { id: 'tungsten metal', name: 'ทังสเตน', type: 'Metal', icon: '💡' },
-  { id: 'vanadium metal', name: 'วาเนเดียม', type: 'Metal', icon: '🔧' },
-  { id: 'manganese metal', name: 'แมงกานีส', type: 'Metal', icon: '🪓' },
-  { id: 'bismuth crystal', name: 'บิสมัท', type: 'Metal', icon: '🌈' },
-  { id: 'gallium metal', name: 'แกลเลียม', type: 'Metal', icon: '🌡️' },
-
-  // === เซรามิก (20) ===
-  { id: 'cement powder', name: 'ปูนซีเมนต์', type: 'Ceramic', icon: '🌪️' },
-  { id: 'glass material', name: 'เนื้อแก้ว', type: 'Ceramic', icon: '🪟' },
-  { id: 'carbon black powder', name: 'คาร์บอนดำ', type: 'Ceramic', icon: '⚫' },
-  { id: 'fiberglass', name: 'เส้นใยแก้ว', type: 'Ceramic', icon: '❄️' },
-  { id: 'natural clay', name: 'ดินเหนียว', type: 'Ceramic', icon: '🏺' },
-  { id: 'red brick', name: 'อิฐมอญ', type: 'Ceramic', icon: '🧱' },
-  { id: 'porcelain ceramic', name: 'พอร์ซเลน', type: 'Ceramic', icon: '☕' },
-  { id: 'alumina powder', name: 'อะลูมินา', type: 'Ceramic', icon: '⚪' },
-  { id: 'zirconia ceramic', name: 'เซอร์โคเนีย', type: 'Ceramic', icon: '🦷' },
-  { id: 'silicon carbide', name: 'ซิลิคอนคาร์ไบด์', type: 'Ceramic', icon: '🖤' },
-  { id: 'boron carbide', name: 'โบรอนคาร์ไบด์', type: 'Ceramic', icon: '🛡️' },
-  { id: 'graphite material', name: 'แกรไฟต์', type: 'Ceramic', icon: '✏️' },
-  { id: 'diamond gemstone', name: 'เพชร', type: 'Ceramic', icon: '💎' },
-  { id: 'quartz crystal', name: 'ควอตซ์', type: 'Ceramic', icon: '🔮' },
-  { id: 'silica powder', name: 'ซิลิกา (ผงแก้ว)', type: 'Ceramic', icon: '⏳' },
-  { id: 'sand', name: 'ทราย', type: 'Ceramic', icon: '🏖️' },
-  { id: 'limestone', name: 'หินปูน', type: 'Ceramic', icon: '⛰️' },
-  { id: 'gypsum material', name: 'ยิปซัม', type: 'Ceramic', icon: '🩹' },
-  { id: 'asbestos mineral', name: 'แร่ใยหิน', type: 'Ceramic', icon: '🌫️' },
-  { id: 'gravel stones', name: 'หินกรวด', type: 'Ceramic', icon: '🪨' },
-
-  // === ธรรมชาติ (20) ===
-  { id: 'wood sawdust', name: 'ผงไม้/ขี้เลื่อย', type: 'Natural', icon: '🪵' },
-  { id: 'paper material', name: 'กระดาษ', type: 'Natural', icon: '📄' },
-  { id: 'cotton fabric', name: 'ฝ้าย', type: 'Natural', icon: '☁️' },
-  { id: 'silk fabric', name: 'ไหม', type: 'Natural', icon: '👘' },
-  { id: 'wool material', name: 'ขนสัตว์', type: 'Natural', icon: '🐑' },
-  { id: 'leather material', name: 'หนัง', type: 'Natural', icon: '👞' },
-  { id: 'hemp fiber', name: 'ใยกัญชง', type: 'Natural', icon: '🌿' },
-  { id: 'bamboo wood', name: 'ไผ่', type: 'Natural', icon: '🎋' },
-  { id: 'cork wood', name: 'ไม้ก๊อก', type: 'Natural', icon: '🍾' },
-  { id: 'seashell', name: 'เปลือกหอย', type: 'Natural', icon: '🐚' },
-  { id: 'bone material', name: 'กระดูก', type: 'Natural', icon: '🦴' },
-  { id: 'ivory material', name: 'งาช้าง', type: 'Natural', icon: '🐘' },
-  { id: 'beeswax', name: 'ขี้ผึ้ง', type: 'Natural', icon: '🕯️️' },
-  { id: 'amber gemstone', name: 'อำพัน', type: 'Natural', icon: '🪨' },
-  { id: 'cellulose fiber', name: 'เซลลูโลส', type: 'Natural', icon: '🔬' },
-  { id: 'starch powder', name: 'แป้ง', type: 'Natural', icon: '🥔' },
-  { id: 'lignin powder', name: 'ลิกนิน', type: 'Natural', icon: '🌳' },
-  { id: 'chitin material', name: 'ไคติน', type: 'Natural', icon: '🦐' },
-  { id: 'gelatin powder', name: 'เจลาติน', type: 'Natural', icon: '🍮' },
-  { id: 'coal', name: 'ถ่านหิน', type: 'Natural', icon: '🪨' },
-
-  // === สารเติมแต่ง / อื่นๆ (20) ===
-  { id: 'water liquid', name: 'น้ำ', type: 'Additive', icon: '💧' },
-  { id: 'oil liquid', name: 'น้ำมัน', type: 'Additive', icon: '🛢️' },
-  { id: 'acid liquid', name: 'กรด', type: 'Additive', icon: '🧪' },
-  { id: 'alkaline liquid', name: 'ด่าง/โซดาไฟ', type: 'Additive', icon: '🧼' },
-  { id: 'salt powder', name: 'เกลือ', type: 'Additive', icon: '🧂' },
-  { id: 'sugar powder', name: 'น้ำตาล', type: 'Additive', icon: '🧊' },
-  { id: 'color pigment', name: 'แม่สี', type: 'Additive', icon: '🎨' },
-  { id: 'sulfur powder', name: 'กำมะถัน', type: 'Additive', icon: '💛' },
-  { id: 'phosphorus powder', name: 'ฟอสฟอรัส', type: 'Additive', icon: '🔥' },
-  { id: 'iodine liquid', name: 'ไอโอดีน', type: 'Additive', icon: '🟣' },
-  { id: 'bleach liquid', name: 'สารฟอกขาว', type: 'Additive', icon: '🥼' },
-  { id: 'yeast powder', name: 'ยีสต์', type: 'Additive', icon: '🦠' },
-  { id: 'baking soda', name: 'เบกกิ้งโซดา', type: 'Additive', icon: '🧁' },
-  { id: 'chemical catalyst', name: 'ตัวเร่งปฏิกิริยา', type: 'Additive', icon: '⚡' },
-  { id: 'antioxidant powder', name: 'สารกันบูด', type: 'Additive', icon: '🛡️' },
-  { id: 'uv stabilizer powder', name: 'สารกันยูวี', type: 'Additive', icon: '😎' },
-  { id: 'plasticizer liquid', name: 'สารเสริมสภาพ', type: 'Additive', icon: '💧' },
-  { id: 'foaming agent', name: 'สารเกิดโฟม', type: 'Additive', icon: '🫧' },
-  { id: 'fire retardant powder', name: 'สารหน่วงไฟ', type: 'Additive', icon: '🧯' },
-  { id: 'chemical hardener', name: 'น้ำยาทำให้แข็ง', type: 'Additive', icon: '🧱' }
-];
-
-// สูตรผสม (รองรับ 2-5 อย่าง) คีย์คือ ID ที่เรียงลำดับตัวอักษร
-const recipes = {
-  // --- ผสม 2 ชนิด ---
-  'carbon black powder,iron ore': { engName: 'Carbon Steel metal', name: 'เหล็กกล้าคาร์บอน (Carbon Steel)', desc: 'ผสมคาร์บอนเข้ากับเหล็กดิบ เพิ่มความแข็งแกร่งอย่างมาก เป็นพื้นฐานของโครงสร้างยุคใหม่', uses: 'โครงสร้างตึก, ชิ้นส่วนรถยนต์', tag: 'โลหะ + เซรามิก' },
-  'copper metal,zinc metal': { engName: 'Brass metal object', name: 'ทองเหลือง (Brass)', desc: 'ทองแดงผสมสังกะสี สวยงามคล้ายทองคำ ทนทานต่อการกัดกร่อน ทนน้ำ', uses: 'เครื่องดนตรี, ก๊อกน้ำ, เครื่องประดับ', tag: 'โลหะ + โลหะ' },
-  'copper metal,tin metal': { engName: 'Bronze metal object', name: 'สำริด (Bronze)', desc: 'โลหะผสมยุคโบราณ แข็งกว่าทองแดงบริสุทธิ์ หล่อขึ้นรูปได้ดี', uses: 'ระฆัง, พระพุทธรูป, เฟือง', tag: 'โลหะ + โลหะ' },
-  'natural rubber,sulfur powder': { engName: 'Vulcanized Rubber tire', name: 'ยางวัลคาไนซ์ (Vulcanized Rubber)', desc: 'การนำยางธรรมชาติมาอบกับกำมะถัน ทำให้ยางคงรูป ไม่ละลายเมื่อร้อน และยืดหยุ่นดีขึ้น', uses: 'พื้นรองเท้า, ท่อยาง, ยางยืด', tag: 'พอลิเมอร์ + สารเติมแต่ง' },
-  'epoxy resin,fiberglass': { engName: 'Fiberglass boat hull', name: 'ไฟเบอร์กลาส (Fiberglass)', desc: 'พลาสติกเสริมใยแก้ว น้ำหนักเบา ขึ้นรูปง่าย มีความแข็งแรง', uses: 'หลังคากระบะ, ตัวถังเรือ', tag: 'พอลิเมอร์ + เซรามิก' },
-  'carbon black powder,epoxy resin': { engName: 'Carbon Fiber CFRP', name: 'คาร์บอนไฟเบอร์ (CFRP)', desc: 'เส้นใยคาร์บอนเคลือบเรซิน แข็งแกร่งกว่าเหล็กแต่น้ำหนักเบากว่ามาก', uses: 'จักรยาน, ชิ้นส่วนซุปเปอร์คาร์', tag: 'เซรามิก + พอลิเมอร์' },
-  'epoxy resin,wood sawdust': { engName: 'Wood Plastic Composite flooring', name: 'ไม้พลาสติก (WPC)', desc: 'ผงไม้ผสมพลาสติก ผิวสัมผัสเหมือนไม้แต่ทนน้ำ ไม่ผุพัง', uses: 'ระเบียงบ้าน, พื้นไม้เทียม', tag: 'พอลิเมอร์ + ธรรมชาติ' },
-  'natural clay,water liquid': { engName: 'Wet sculpting clay', name: 'ดินเหนียวปั้นได้', desc: 'ดินเหนียวที่เติมน้ำในสัดส่วนพอเหมาะ ทำให้ขึ้นรูปทรงต่างๆ ได้', uses: 'เครื่องปั้นดินเผาก่อนเผา', tag: 'เซรามิก + สารเติมแต่ง' },
-  'cement powder,sand': { engName: 'Cement mortar', name: 'ปูนทราย (มอร์ตาร์)', desc: 'ปูนซีเมนต์ผสมทรายและน้ำ ใช้สำหรับการก่อและฉาบ', uses: 'ก่ออิฐ, ฉาบผนัง', tag: 'เซรามิก + เซรามิก' },
-  'paper material,beeswax': { engName: 'Wax paper packaging', name: 'กระดาษไข (Wax Paper)', desc: 'กระดาษเคลือบขี้ผึ้ง กันน้ำและกันความชื้น', uses: 'ห่ออาหาร, กระดาษรองอบ', tag: 'ธรรมชาติ + ธรรมชาติ' },
-  'chemical hardener,silicone rubber': { engName: 'Silicone mold for resin', name: 'ซิลิโคนหล่อแบบ', desc: 'ยางซิลิโคนผสมน้ำยาทำให้แข็งตัว ใช้ทำแม่พิมพ์ที่มีความละเอียดสูง', uses: 'แม่พิมพ์สบู่, เรซิน, โมเดล', tag: 'พอลิเมอร์ + สารเติมแต่ง' },
-  'acid liquid,lead metal': { engName: 'Lead acid car battery', name: 'แบตเตอรี่ตะกั่วกรด', desc: 'แผ่นตะกั่วจุ่มในกรดซัลฟิวริก เกิดปฏิกิริยาเคมีกักเก็บไฟฟ้าได้', uses: 'แบตเตอรี่รถยนต์', tag: 'โลหะ + สารเติมแต่ง' },
-
-  // --- ผสม 3 ชนิด ---
-  'carbon black powder,chromium metal,iron ore': { engName: 'Stainless Steel cookware', name: 'สแตนเลส (Stainless Steel)', desc: 'เหล็กกล้าผสมโครเมียม ทำให้เกิดฟิล์มป้องกันสนิม', uses: 'เครื่องครัว, อุปกรณ์การแพทย์', tag: 'โลหะ (3 ชนิด)' },
-  'carbon black powder,natural rubber,sulfur powder': { engName: 'Car tire tread', name: 'ยางรถยนต์เสริมคาร์บอน', desc: 'ยางวัลคาไนซ์ผสมเขม่าคาร์บอน เพิ่มความทนทานต่อการเสียดสี ทนทานต่อถนน', uses: 'ล้อรถยนต์ทั่วไป', tag: 'พอลิเมอร์ + เซรามิก + สารเคมี' },
-  'cement powder,sand,water liquid': { engName: 'Wet concrete mixing', name: 'ปูนมอร์ตาร์เปียก', desc: 'ปูนซีเมนต์ ทราย และน้ำ คลุกเคล้าจนเข้ากัน พร้อมนำไปใช้งานก่อฉาบ', uses: 'ก่อผนังอิฐ, ปรับระดับพื้น', tag: 'เซรามิก + ธรรมชาติ/สาร' },
-  'aluminum metal,epoxy resin,fiberglass': { engName: 'GLARE aviation material fuselage', name: 'แกลร์ (GLARE)', desc: 'สลับชั้นอะลูมิเนียมกับไฟเบอร์กลาส ทนทานต่อการล้าและรอยร้าว', uses: 'ลำตัวเครื่องบินโดยสาร', tag: 'โลหะ + เซรามิก + พอลิเมอร์' },
-  'epoxy resin,glass material,pvb plastic film': { engName: 'Laminated glass windshield', name: 'กระจกลามิเนต (Laminated Glass)', desc: 'กระจก 2 แผ่นประกบฟิล์ม PVB ด้วยเรซิน เมื่อแตกจะไม่ร่วงหล่น', uses: 'กระจกหน้ารถยนต์, หน้าต่างตึกสูง', tag: 'เซรามิก + พอลิเมอร์' },
-  'copper metal,gold metal,silver metal': { engName: 'Rose Gold jewelry ring', name: 'ทองคำ 18K (Pink/Yellow Gold)', desc: 'ทองคำบริสุทธิ์นิ่มเกินไป ต้องผสมเงินและทองแดงเพื่อให้แข็งแรงพอจะทำเครื่องประดับ', uses: 'แหวน, สร้อยคอ', tag: 'อัลลอยด์ (โลหะ 3 ชนิด)' },
-  'fire retardant powder,natural clay,water liquid': { engName: 'Fire Brick furnace', name: 'อิฐทนไฟ (Fire Brick)', desc: 'ดินเหนียวผสมสารหน่วงไฟและน้ำ ทนความร้อนสูงมาก ไม่หลอมละลาย', uses: 'เตาหลอมโลหะ, เตาอบพิซซ่า', tag: 'เซรามิกพิเศษ' },
-  'chemical hardener,color pigment,silicone rubber': { engName: 'Colorful Silicone Mold', name: 'ซิลิโคนแม่พิมพ์สีสัน', desc: 'เพิ่มแม่สีเข้าไปในกระบวนการหล่อแม่พิมพ์ เพื่อจำแนกประเภทความแข็งของซิลิโคน', uses: 'อุตสาหกรรมหล่อพลาสติก', tag: 'พอลิเมอร์ประยุกต์' },
-
-  // --- ผสม 4 ชนิด ---
-  'cement powder,gravel stones,sand,water liquid': { engName: 'Concrete road surface', name: 'คอนกรีต (Concrete)', desc: 'ส่วนผสมของหิน ทราย ปูนซีเมนต์ และน้ำ แข็งตัวกลายเป็นหินเทียมที่รับแรงกดได้มหาศาล', uses: 'พื้นถนน, ฐานราก', tag: 'วัสดุผสม (เซรามิกหลัก)' },
-  'carbon black powder,chromium metal,iron ore,nickel metal': { engName: 'Industrial chemical tank stainless steel', name: 'สแตนเลสเกรดออสเทนนิติก (304/316)', desc: 'เพิ่มนิกเกิลเข้าไปในสแตนเลส ทำให้ทนการกัดกร่อนจากกรดและเกลือได้ดีเยี่ยม', uses: 'แทงก์น้ำสารเคมี, อุปกรณ์เรือ', tag: 'ซุปเปอร์อัลลอยด์' },
-  'epoxy resin,kevlar fabric,nylon fabric,zirconia ceramic': { engName: 'Military bulletproof vest composite', name: 'เกราะกันกระสุนคอมโพสิต', desc: 'แผ่นเซรามิกรับแรงกระแทก ซ้อนด้วยเคฟลาร์เหนียว และไนลอนเคลือบเรซิน', uses: 'เสื้อเกราะทหารระดับสูง', tag: 'Advanced Composite' },
-  'carbon black powder,natural rubber,steel metal,sulfur powder': { engName: 'Steel-belted radial tire section', name: 'ยางเรเดียลเสริมใยเหล็ก', desc: 'ยางรถยนต์ที่มีการฝังลวดเหล็กกล้าเข้าไปด้านใน เพิ่มความต้านทานการระเบิด', uses: 'ยางรถสปอร์ต, รถบรรทุก', tag: 'Polymer + Metal Composite' },
-
-  // --- ผสม 5 ชนิด (Max) ---
-  'cement powder,gravel stones,iron ore,sand,water liquid': { engName: 'Reinforced concrete structure building', name: 'คอนกรีตเสริมเหล็ก (Reinforced Concrete)', desc: 'สุดยอดวัสดุก่อสร้าง! คอนกรีตรับแรงอัด เหล็กรับแรงดึง ประกอบกันเป็นโครงสร้างที่ตึกระฟ้าขาดไม่ได้', uses: 'ตึกระฟ้า, สะพานแขวน, เขื่อน', tag: 'วัสดุผสมระดับโครงสร้าง (Macro-composite)' },
-  'aluminum metal,copper metal,magnesium metal,manganese metal,zinc metal': { engName: 'Aerospace Duralumin satellite part', name: 'ดูราลูมินเกรดอวกาศ (Aerospace Duralumin)', desc: 'โลหะผสมอะลูมิเนียมขั้นสูงที่ควบคุมสัดส่วนธาตุต่างๆ อย่างแม่นยำ เบาแต่ทนทานสุดยอด', uses: 'กระสวยอวกาศ, ดาวเทียม', tag: 'Aerospace Alloy' },
-};
-
-// สูตรแนะนำ (Recommended Recipes)
-const RECOMMENDED_RECIPES = [
-  'carbon black powder,iron ore', // Carbon Steel
-  'copper metal,zinc metal', // Brass
-  'epoxy resin,fiberglass', // Fiberglass
-  'cement powder,gravel stones,sand,water liquid' // Concrete
-];
-
-const MaterialImage = ({ prompt, alt, className, type = 'material' }) => {
-  const [imgSrc, setImgSrc] = useState('');
-  
-  useEffect(() => {
-    // เปลี่ยนมาใช้ API ค้นหาภาพจริงจากอินเทอร์เน็ต (Bing Image Search Thumbnail)
-    // การันตีว่าภาพขึ้น 100% โหลดเร็ว และเป็นภาพของจริงที่ทำให้เข้าใจง่าย
-    const finalPrompt = type === 'material' 
-        ? `${prompt} raw material real photo`
-        : `${prompt} real object product photography`;
-    
-    const safePrompt = encodeURIComponent(finalPrompt);
-    // ดึงภาพ Thumbnail ขนาด 300x300 แบบตัดสี่เหลี่ยมจัตุรัสพอดีจากเว็บ
-    setImgSrc(`https://tse2.mm.bing.net/th?q=${safePrompt}&w=300&h=300&c=7&rs=1&p=0&dpr=1&pid=1.7`);
-  }, [prompt, type]);
-
-  return (
-    <img 
-      src={imgSrc} 
-      alt={alt} 
-      className={`object-cover bg-slate-900 ${className}`}
-      loading="lazy"
-      onError={(e) => {
-        // Fallback placeholder หากภาพไม่มีในเน็ตจริงๆ
-        e.target.onerror = null; 
-        e.target.src = `https://placehold.co/300x300/1e293b/cbd5e1?text=${encodeURIComponent(alt.charAt(0))}`;
-      }}
-    />
-  );
-};
-
-export default function MaterialsDashboard() {
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [mixResult, setMixResult] = useState(null);
-  const [isMixing, setIsMixing] = useState(false);
-  const [notification, setNotification] = useState("");
-  const [discoveredRecipes, setDiscoveredRecipes] = useState(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
-
-  const workbenchRef = useRef(null);
-  const resultRef = useRef(null);
-
-  const totalRecipes = Object.keys(recipes).length;
-  const MAX_MIX_ITEMS = 5;
-
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(""), 3500);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
-
-  const filteredMaterials = useMemo(() => {
-    return baseMaterials.filter(mat => {
-      const matchesSearch = mat.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = activeCategory === "All" || mat.type === activeCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [searchQuery, activeCategory]);
-
-  const handleSelectItem = (material) => {
-    setMixResult(null); 
-    if (selectedItems.length >= MAX_MIX_ITEMS) {
-      setNotification(`🧪 ช่องผสมเต็มแล้ว! (สูงสุด ${MAX_MIX_ITEMS} ชนิด) กรุณาเอาวัสดุออก หรือกด 'เริ่มสังเคราะห์'`);
-      return;
-    }
-    if (selectedItems.find(item => item.id === material.id)) {
-       setNotification("⚠️ คุณเลือกวัสดุนี้ไปแล้ว ลองหยิบวัสดุอื่นมาผสมกันดูนะ");
-       return;
-    }
-    setSelectedItems([...selectedItems, material]);
-  };
-
-  const handleRemoveItem = (indexToRemove) => {
-    setSelectedItems(selectedItems.filter((_, index) => index !== indexToRemove));
-    setMixResult(null);
-  };
-
-  const handleMix = () => {
-    if (selectedItems.length < 2) {
-      setNotification("ต้องเลือกวัสดุอย่างน้อย 2 ชนิดเพื่อทำการผสม!");
-      return;
-    }
-    setIsMixing(true);
-    setMixResult(null);
-
-    setTimeout(() => {
-      setIsMixing(false);
-      // Sort IDs alphabetically to match the recipe keys
-      const ids = selectedItems.map(item => item.id).sort();
-      const recipeKey = ids.join(',');
-      
-      if (recipes[recipeKey]) {
-        setMixResult({ success: true, ...recipes[recipeKey] });
-        setDiscoveredRecipes(prev => new Set(prev).add(recipeKey));
-      } else {
-        // Fallback for failed mixes
-        let failMessage = 'ปฏิกิริยาไม่เสถียร! วัสดุเหล่านี้ผสมกันไม่ได้เกิดเป็นวัสดุที่ใช้งานได้จริง ลองจับคู่ใหม่ดูนะ';
-        let failEngName = 'pile of toxic chemical sludge, dirty';
-        if (selectedItems.length > 3) {
-            failMessage = 'ส่วนผสมซับซ้อนเกินไปและขัดแย้งกันเอง! กลายเป็นก้อนของแข็งไร้ประโยชน์จากห้องแล็บ';
-            failEngName = 'broken pieces of unidentified grey solid material waste';
-        }
-        setMixResult({ 
-          success: false, 
-          name: 'ตะกอนสารเคมี (ล้มเหลว)', 
-          engName: failEngName,
-          desc: failMessage
-        });
-      }
-
-      // เลื่อนหน้าจอลงมาดูผลลัพธ์ (รองรับมือถือ)
-      setTimeout(() => {
-         resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 100);
-
-    }, 2500); // 2.5 second animation
-  };
-
-  const handleReset = () => {
-    setSelectedItems([]);
-    setMixResult(null);
-    setNotification("");
-  };
-
-  const handleAutoFill = (recipeKey) => {
-    const materialIds = recipeKey.split(',');
-    const itemsToSelect = materialIds.map(id => baseMaterials.find(m => m.id === id)).filter(Boolean);
-    setSelectedItems(itemsToSelect);
-    setMixResult(null);
-    setNotification("✅ จัดเตรียมวัตถุดิบสำหรับสูตรแนะนำเรียบร้อยแล้ว กด 'เริ่มสังเคราะห์' ได้เลย!");
-    
-    // เลื่อนหน้าจอขึ้นไปที่โต๊ะทดลองสำหรับมือถือ/iPad
-    setTimeout(() => {
-       workbenchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  };
-
-  const getCategoryStyles = (type) => {
-      const cat = Object.values(CATEGORIES).find(c => c.id === type);
-      return cat || { color: 'from-gray-500 to-gray-600', text: 'text-gray-400', border: 'border-gray-500' };
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-950 font-sans pb-12 overflow-x-hidden text-gray-100 selection:bg-cyan-500 selection:text-white">
-      {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 shadow-2xl relative overflow-hidden sticky top-0 z-50">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-indigo-500 to-fuchsia-500"></div>
-        <div className="max-w-7xl mx-auto p-3 md:p-6 flex flex-col md:flex-row items-center justify-between relative z-10 gap-4">
-          <div className="flex items-center gap-3 md:gap-4">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl md:text-3xl shadow-[0_0_15px_rgba(34,212,238,0.2)]">
-                🔬
-            </div>
-            <div>
-              <h1 className="text-xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400 tracking-tight">
-                Real Materials Lab
-              </h1>
-              <p className="text-slate-400 text-xs md:text-sm">ศูนย์วิจัยและสังเคราะห์วัสดุขั้นสูง (ภาพเสมือนจริง)</p>
-            </div>
-          </div>
-          
-          <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-2 md:p-3 border border-slate-700 shadow-inner flex flex-row md:flex-col items-center justify-between md:justify-center min-w-[200px] md:min-w-[220px] w-full md:w-auto">
-            <span className="text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-0 md:mb-1">สูตรลับที่ค้นพบ</span>
-            <div className="flex items-baseline gap-1 md:gap-2">
-              <span className="text-xl md:text-2xl font-black text-cyan-400">{discoveredRecipes.size}</span>
-              <span className="text-xs md:text-sm text-slate-500 font-bold">/ {totalRecipes}</span>
-            </div>
-            <div className="w-full bg-slate-900 rounded-full h-1.5 md:mt-2 overflow-hidden hidden md:block">
-              <div 
-                className="bg-gradient-to-r from-cyan-400 to-fuchsia-500 h-full rounded-full transition-all duration-700" 
-                style={{ width: `${(discoveredRecipes.size / totalRecipes) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto mt-4 md:mt-6 px-3 md:px-4 flex flex-col gap-4 md:gap-6">
         
-        {/* Inventory Section (Top) */}
-        <section className="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden flex flex-col max-h-[400px] md:max-h-[450px]">
-          {/* Inventory Header & Controls */}
-          <div className="p-3 md:p-4 bg-slate-800/50 border-b border-slate-700/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 md:gap-4">
-            <h2 className="font-bold text-base md:text-lg text-slate-200 flex items-center gap-2 shrink-0">
-               <span className="text-lg md:text-xl">📦</span> คลังวัตถุดิบ <span className="text-slate-500 font-normal text-xs md:text-sm">({baseMaterials.length} ชนิด)</span>
-            </h2>
-            
-            <div className="flex flex-col md:flex-row w-full lg:w-auto gap-3 items-center min-w-0">
-               {/* Categories - Scrollable horizontally on mobile */}
-               <div className="flex w-full lg:w-auto overflow-x-auto hide-scrollbar pb-1 snap-x justify-start md:justify-center gap-2 items-center">
-                  <button onClick={() => setActiveCategory("All")} className={`shrink-0 px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all snap-start ${activeCategory === "All" ? 'bg-slate-700 text-white shadow-md' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
-                     All
-                  </button>
-                  {Object.values(CATEGORIES).map(cat => (
-                      <button 
-                         key={cat.id} 
-                         onClick={() => setActiveCategory(cat.id)}
-                         className={`shrink-0 px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all snap-start
-                         ${activeCategory === cat.id ? `bg-slate-800 border ${cat.border} ${cat.text} shadow-[0_0_10px_rgba(255,255,255,0.05)]` : 'bg-slate-900/50 border border-transparent text-slate-500 hover:text-slate-300'}`}
-                      >
-                         <span>{cat.icon}</span> {cat.name}
-                      </button>
-                  ))}
-               </div>
+        .animate-slide-down { animation: slide-down 0.3s ease-out forwards; }
+        .animate-slide-up { animation: slide-up 0.5s ease-out forwards; }
+        .animate-pop-in { animation: pop-in 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-gray-100 selection:bg-cyan-500 selection:text-white pb-12 overflow-x-hidden">
 
-               {/* Search */}
-               <div className="relative w-full md:w-56 shrink-0">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
-                  <input 
-                     type="text" 
-                     placeholder="ค้นหาวัสดุ..." 
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                     className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-xl pl-9 pr-4 py-1.5 md:py-2 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-xs md:text-sm"
-                  />
-               </div>
-            </div>
-          </div>
-
-          {/* Inventory Grid (Scrollable) */}
-          <div className="p-3 md:p-4 overflow-y-auto custom-scrollbar flex-1 bg-slate-900/50">
-             {filteredMaterials.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-sm">ไม่พบวัสดุที่ค้นหา</div>
-             ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-4">
-                  {filteredMaterials.map((mat) => {
-                    const styles = getCategoryStyles(mat.type);
-                    const isSelected = selectedItems.find(item => item.id === mat.id);
-                    return (
-                      <button
-                        key={mat.id}
-                        onClick={() => handleSelectItem(mat)}
-                        disabled={isSelected}
-                        className={`relative flex flex-col items-center justify-start p-2 md:p-2.5 rounded-xl border transition-all duration-300 group overflow-hidden
-                           ${isSelected 
-                              ? 'border-slate-700 bg-slate-900 opacity-40 cursor-not-allowed scale-95 grayscale' 
-                              : `border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-cyan-500 hover:-translate-y-1 hover:shadow-lg`}
-                        `}
-                      >
-                        {/* Real Image Container */}
-                        <div className="w-14 h-14 sm:w-20 sm:h-20 mb-1.5 md:mb-2 rounded-lg overflow-hidden border border-slate-600/50 relative z-10 shadow-inner group-hover:scale-105 transition-transform bg-slate-900 shrink-0">
-                           <MaterialImage prompt={mat.id} alt={mat.name} type="material" className="w-full h-full" />
-                           {/* Small Category Badge */}
-                           <div className="absolute top-0 right-0 bg-black/70 backdrop-blur-sm text-[10px] px-1 py-0.5 rounded-bl-lg border-b border-l border-slate-600/50 z-20">
-                              {mat.icon}
-                           </div>
-                           
-                           {isSelected && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-30">
-                                 <span className="text-xl md:text-2xl drop-shadow-lg">✅</span>
-                              </div>
-                           )}
-                        </div>
-                        
-                        <div className="text-[10px] md:text-xs font-bold text-slate-300 text-center leading-tight z-10 px-0.5 md:px-1 w-full truncate">
-                           {mat.name}
-                        </div>
-                      </button>
-                    )
-                  })}
+    <header class="bg-slate-900 border-b border-slate-800 shadow-2xl relative overflow-hidden sticky top-0 z-50">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-indigo-500 to-fuchsia-500"></div>
+        <div class="max-w-7xl mx-auto p-3 md:p-6 flex flex-col md:flex-row items-center justify-between relative z-10 gap-4">
+            <div class="flex items-center gap-3 md:gap-4">
+                <div class="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl md:text-3xl shadow-[0_0_15px_rgba(34,212,238,0.2)]">🔬</div>
+                <div>
+                    <h1 class="text-xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400 tracking-tight">Real Materials Lab</h1>
+                    <p class="text-slate-400 text-xs md:text-sm">ศูนย์วิจัยและสังเคราะห์วัสดุขั้นสูง (ภาพเสมือนจริง)</p>
                 </div>
-             )}
-          </div>
-        </section>
-
-        {/* Lab Workbench Section */}
-        <section ref={workbenchRef} className="bg-slate-900 rounded-3xl shadow-2xl border border-slate-800 overflow-hidden relative">
-          
-          {/* Notification Toast */}
-          {notification && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500/95 backdrop-blur text-white px-4 py-2 md:px-5 md:py-2.5 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.4)] z-20 animate-[slide-down_0.3s_ease-out] text-center font-medium border border-red-400 text-xs md:text-sm whitespace-nowrap max-w-[90vw] overflow-hidden text-ellipsis">
-              {notification}
             </div>
-          )}
-
-          {/* Workbench Area */}
-          <div className="p-4 md:p-8 relative min-h-[300px] md:min-h-[350px] flex flex-col items-center justify-center">
-            {/* Background Grid Pattern */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
             
-            {/* Top right reset button */}
-            <button onClick={handleReset} className="absolute top-3 right-3 md:top-4 md:right-4 text-[10px] md:text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 px-2 py-1 md:px-3 md:py-1.5 rounded-lg transition-colors border border-slate-700 flex items-center gap-1.5 z-20 shadow-md">
-               🔄 ล้างโต๊ะผสม
-            </button>
-
-            {/* Dynamic Slots */}
-            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-5 relative z-10 w-full max-w-4xl min-h-[120px] md:min-h-[160px]">
-               {selectedItems.map((item, index) => {
-                  const styles = getCategoryStyles(item.type);
-                  return (
-                    <React.Fragment key={`slot-${index}`}>
-                       {/* Operator (+) before item, except first */}
-                       {index > 0 && (
-                          <div className="text-xl md:text-2xl font-black text-slate-600 animate-[pop-in_0.2s]">➕</div>
-                       )}
-                       
-                       {/* The Slot with Image */}
-                       <div 
-                         onClick={() => handleRemoveItem(index)}
-                         className={`w-16 h-16 sm:w-20 sm:h-20 md:w-32 md:h-32 rounded-xl md:rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-[2px] md:border-[3px] relative group animate-[pop-in_0.3s_ease-out] overflow-hidden bg-slate-800 shadow-[0_0_20px_rgba(0,0,0,0.4)] hover:shadow-red-500/30 hover:border-red-500/50`}
-                         style={{ borderColor: 'rgba(255,255,255,0.05)' }}
-                       >
-                         {/* Background Image of the selected material */}
-                         <MaterialImage prompt={item.id} alt={item.name} type="material" className="absolute inset-0 w-full h-full opacity-60 group-hover:opacity-20 transition-opacity" />
-                         
-                         {/* Label overlays */}
-                         <span className="text-xl md:text-3xl z-10 bg-black/60 p-1 md:p-1.5 rounded-full backdrop-blur-md border border-white/10 mb-0.5 md:mb-2 shadow-lg">{item.icon}</span>
-                         <span className={`text-[8px] md:text-xs font-bold text-center px-1 md:px-2 py-0.5 z-10 bg-black/70 backdrop-blur-md rounded border border-white/10 text-white shadow-lg truncate w-11/12`}>{item.name}</span>
-                         
-                         {/* Remove Overlay */}
-                         <div className="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20 backdrop-blur-sm">
-                            <span className="text-white font-bold text-[10px] md:text-sm drop-shadow-md">ออก ❌</span>
-                         </div>
-                       </div>
-                    </React.Fragment>
-                  );
-               })}
-
-               {/* Empty Slot for adding more (up to MAX) */}
-               {selectedItems.length < MAX_MIX_ITEMS && (
-                  <React.Fragment>
-                     {selectedItems.length > 0 && (
-                        <div className="text-xl md:text-2xl font-black text-slate-700">➕</div>
-                     )}
-                     <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-32 md:h-32 rounded-xl md:rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-600 bg-slate-900/50 text-slate-500 shadow-inner">
-                        <span className="text-[10px] md:text-sm font-medium">เพิ่มวัสดุ</span>
-                        <span className="text-[8px] md:text-xs mt-0.5 md:mt-1">({selectedItems.length}/{MAX_MIX_ITEMS})</span>
-                     </div>
-                  </React.Fragment>
-               )}
-            </div>
-
-            {/* Mix Button */}
-            <div className="mt-8 md:mt-12 z-10">
-              <button
-                onClick={handleMix}
-                disabled={selectedItems.length < 2 || isMixing}
-                className={`relative overflow-hidden px-6 md:px-10 py-3 md:py-3.5 rounded-2xl font-extrabold text-sm md:text-lg tracking-wide shadow-2xl transition-all duration-300 transform 
-                  ${selectedItems.length >= 2 && !isMixing
-                    ? 'bg-slate-800 text-white border border-cyan-500/50 hover:scale-105 hover:shadow-[0_0_40px_rgba(34,212,238,0.5)] group' 
-                    : 'bg-slate-900 text-slate-600 cursor-not-allowed border border-slate-800'}`}
-              >
-                {/* Active Button Background Gradient */}
-                {selectedItems.length >= 2 && !isMixing && (
-                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity"></div>
-                )}
-
-                {isMixing ? (
-                  <span className="flex items-center gap-2 md:gap-3 text-cyan-300">
-                     <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
-                     กำลังประมวลผล...
-                  </span>
-                ) : (
-                  <span className="relative z-10 flex items-center gap-1.5 md:gap-2">
-                     <span className="text-lg md:text-xl">✨</span> เริ่มสังเคราะห์ 
-                     <span className="bg-black/30 text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-md ml-1 shadow-inner border border-white/10">{selectedItems.length} ชนิด</span>
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-          
-          {/* Result Section */}
-          <div ref={resultRef} className="transition-all duration-500 bg-slate-950 border-t border-slate-800 relative">
-            {!isMixing && !mixResult && (
-               <div className="h-[150px] md:h-[200px] flex items-center justify-center text-slate-600 text-xs md:text-sm italic px-4 text-center">
-                  ลากหรือคลิกวัสดุด้านบน เพื่อเริ่มการทดลอง...
-               </div>
-            )}
-
-            {isMixing && (
-              <div className="h-[300px] md:h-[350px] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm z-10">
-                <div className="relative w-20 h-20 md:w-24 md:h-24">
-                   <div className="absolute inset-0 border-[4px] md:border-[6px] border-slate-800 rounded-full"></div>
-                   <div className="absolute inset-0 border-[4px] md:border-[6px] border-cyan-500 border-t-transparent border-l-transparent rounded-full animate-[spin_1s_linear_infinite]"></div>
-                   <div className="absolute inset-2 md:inset-3 border-[4px] md:border-[6px] border-fuchsia-500 border-b-transparent border-r-transparent rounded-full animate-[spin_1.5s_linear_reverse_infinite]"></div>
-                   <div className="absolute inset-0 flex items-center justify-center text-2xl md:text-3xl animate-pulse">🧬</div>
+            <div class="bg-slate-800/80 backdrop-blur-md rounded-xl p-2 md:p-3 border border-slate-700 shadow-inner flex flex-row md:flex-col items-center justify-between md:justify-center min-w-[200px] md:min-w-[220px] w-full md:w-auto">
+                <span class="text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-0 md:mb-1">สูตรลับที่ค้นพบ</span>
+                <div class="flex items-baseline gap-1 md:gap-2">
+                    <span id="discovered-count" class="text-xl md:text-2xl font-black text-cyan-400">0</span>
+                    <span class="text-xs md:text-sm text-slate-500 font-bold">/ <span id="total-count">0</span></span>
                 </div>
-                <p className="text-cyan-400 font-bold mt-4 md:mt-6 tracking-widest uppercase text-xs md:text-sm animate-pulse">Synthesizing Materials...</p>
-              </div>
-            )}
+                <div class="w-full bg-slate-900 rounded-full h-1.5 md:mt-2 overflow-hidden hidden md:block">
+                    <div id="progress-bar" class="bg-gradient-to-r from-cyan-400 to-fuchsia-500 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
 
-            {mixResult && !isMixing && (
-              <div className={`p-5 md:p-10 w-full min-h-[300px] md:min-h-[350px] animate-[slide-up_0.5s_ease-out] bg-gradient-to-br ${mixResult.success ? 'from-cyan-950/90 to-indigo-950/90' : 'from-red-950/90 to-orange-950/90'} flex flex-col justify-center`}>
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 max-w-4xl mx-auto w-full">
-                  
-                  {/* Result Image Container (Real Image) */}
-                  <div className={`relative flex items-center justify-center w-40 h-40 md:w-64 md:h-64 rounded-2xl md:rounded-3xl shrink-0 overflow-hidden border-4
-                     ${mixResult.success ? 'border-cyan-500/40 shadow-[0_0_50px_rgba(34,212,238,0.3)]' : 'border-red-500/40 shadow-[0_0_50px_rgba(239,68,68,0.3)]'}
-                  `}>
-                    <MaterialImage 
-                       prompt={mixResult.engName || mixResult.name} 
-                       alt={mixResult.name} 
-                       type="product" 
-                       className={`w-full h-full transform hover:scale-110 transition-transform duration-700 ${!mixResult.success && 'grayscale contrast-125 brightness-75'}`} 
-                    />
-                    
-                    {mixResult.success && (
-                       <div className="absolute -top-2 -right-2 md:-top-3 md:-right-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-yellow-950 text-[10px] md:text-xs font-black px-3 py-1 md:px-4 md:py-1.5 rounded-full shadow-lg transform rotate-12 uppercase tracking-wide border border-yellow-200 z-10">
-                         สำเร็จ!
-                       </div>
-                    )}
-                  </div>
-
-                  {/* Result Details */}
-                  <div className="flex-1 text-center md:text-left w-full">
-                    <div className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 mb-4">
-                       <h3 className={`text-2xl md:text-4xl font-extrabold tracking-tight ${mixResult.success ? 'text-white' : 'text-red-400'}`}>
-                         {mixResult.name}
-                       </h3>
-                       {mixResult.success && (
-                          <span className="bg-indigo-500/20 border border-indigo-500/50 text-indigo-300 text-[10px] md:text-xs px-2.5 py-1 rounded-full font-bold shadow-inner">
-                             {mixResult.tag}
-                          </span>
-                       )}
+    <main class="max-w-7xl mx-auto mt-4 md:mt-6 px-3 md:px-4 flex flex-col gap-4 md:gap-6">
+        
+        <section class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden flex flex-col max-h-[400px] md:max-h-[450px]">
+            <div class="p-3 md:p-4 bg-slate-800/50 border-b border-slate-700/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 md:gap-4">
+                <h2 class="font-bold text-base md:text-lg text-slate-200 flex items-center gap-2 shrink-0">
+                    <span class="text-lg md:text-xl">📦</span> คลังวัตถุดิบ <span class="text-slate-500 font-normal text-xs md:text-sm">(<span id="inventory-count">100</span> ชนิด)</span>
+                </h2>
+                
+                <div class="flex flex-col md:flex-row w-full lg:w-auto gap-3 items-center min-w-0">
+                    <div id="category-filters" class="flex w-full lg:w-auto overflow-x-auto hide-scrollbar pb-1 snap-x justify-start md:justify-center gap-2 items-center">
+                        <!-- Category Buttons dynamically injected here -->
                     </div>
-                    
-                    <p className="text-slate-300 text-sm md:text-lg mb-5 md:mb-6 leading-relaxed bg-black/30 p-4 md:p-5 rounded-xl md:rounded-2xl border border-white/5 backdrop-blur-sm shadow-inner text-left">
-                      {mixResult.desc}
-                    </p>
-                    
-                    {mixResult.success && (
-                      <div className="flex items-start gap-3 md:gap-4 bg-cyan-900/30 p-4 md:p-5 rounded-xl md:rounded-2xl border border-cyan-500/30 shadow-lg relative overflow-hidden text-left">
-                        <div className="absolute top-0 right-0 w-24 h-24 md:w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                        <div className="text-2xl md:text-3xl mt-0.5 md:mt-1 drop-shadow-md shrink-0">🛠️</div>
-                        <div className="relative z-10">
-                           <strong className="text-cyan-400 block mb-1 text-xs md:text-sm uppercase tracking-wide">การประยุกต์ใช้งาน:</strong>
-                           <span className="text-slate-200 leading-snug block text-sm md:text-lg">{mixResult.uses}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    <div class="relative w-full md:w-56 shrink-0">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
+                        <input id="search-input" type="text" placeholder="ค้นหาวัสดุ..." class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-xl pl-9 pr-4 py-1.5 md:py-2 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-xs md:text-sm"/>
+                    </div>
                 </div>
-              </div>
-            )}
-          </div>
+            </div>
+
+            <div class="p-3 md:p-4 overflow-y-auto custom-scrollbar flex-1 bg-slate-900/50">
+                <div id="inventory-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-4">
+                    <!-- Inventory Items dynamically injected here -->
+                </div>
+            </div>
         </section>
 
-        {/* Recommended Recipes Section */}
-        <section className="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl p-6 md:p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">💡</span>
-            <div>
-               <h2 className="text-xl font-bold text-slate-200">แนะนำสูตรวัสดุผสม (Recommended Composites)</h2>
-               <p className="text-slate-400 text-sm">ไม่รู้จะเริ่มตรงไหน? ลองคลิกเลือกสูตรยอดนิยมเหล่านี้เพื่อจัดเตรียมวัตถุดิบอัตโนมัติ</p>
+        <section id="workbench-section" class="bg-slate-900 rounded-3xl shadow-2xl border border-slate-800 overflow-hidden relative">
+            <div id="notification-toast" class="hidden absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500/95 backdrop-blur text-white px-4 py-2 md:px-5 md:py-2.5 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.4)] z-20 animate-slide-down text-center font-medium border border-red-400 text-xs md:text-sm whitespace-nowrap max-w-[90vw] overflow-hidden text-ellipsis"></div>
+
+            <div class="p-4 md:p-8 relative min-h-[300px] md:min-h-[350px] flex flex-col items-center justify-center">
+                <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px); background-size: 40px 40px;"></div>
+                
+                <button onclick="handleReset()" class="absolute top-3 right-3 md:top-4 md:right-4 text-[10px] md:text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 px-2 py-1 md:px-3 md:py-1.5 rounded-lg transition-colors border border-slate-700 flex items-center gap-1.5 z-20 shadow-md">
+                    🔄 ล้างโต๊ะผสม
+                </button>
+
+                <div id="workbench-slots" class="flex flex-wrap items-center justify-center gap-2 md:gap-5 relative z-10 w-full max-w-4xl min-h-[120px] md:min-h-[160px]">
+                    <!-- Selected Items dynamically injected here -->
+                </div>
+
+                <div class="mt-8 md:mt-12 z-10" id="mix-button-container">
+                    <!-- Mix Button injected here -->
+                </div>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-             {RECOMMENDED_RECIPES.map((recipeKey) => {
+            
+            <div id="result-section" class="transition-all duration-500 bg-slate-950 border-t border-slate-800 relative">
+                <!-- Result visually injected here -->
+            </div>
+        </section>
+
+        <section class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl p-6 md:p-8">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="text-3xl">💡</span>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-200">แนะนำสูตรวัสดุผสม (Recommended Composites)</h2>
+                    <p class="text-slate-400 text-sm">ไม่รู้จะเริ่มตรงไหน? ลองคลิกเลือกสูตรยอดนิยมเหล่านี้เพื่อจัดเตรียมวัตถุดิบอัตโนมัติ</p>
+                </div>
+            </div>
+            <div id="recommended-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <!-- Recommended Recipes injected here -->
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="mt-12 pb-6 text-center w-full relative z-10">
+        <p class="text-slate-400 text-sm font-medium px-4 py-2 bg-slate-900/50 inline-block rounded-full border border-slate-800/50 shadow-inner">
+            ✨ พัฒนาโดย <span class="text-cyan-400 font-bold tracking-wide">Mr.Metawat Phongsaphang</span> ✨
+        </p>
+    </footer>
+
+    <script>
+        // Data Definitions
+        const CATEGORIES = {
+            POLYMER: { id: 'Polymer', name: 'พอลิเมอร์', icon: '🧬', color: 'from-blue-400 to-blue-600', text: 'text-blue-400', border: 'border-blue-500/50' },
+            METAL: { id: 'Metal', name: 'โลหะ', icon: '⚙️', color: 'from-slate-400 to-slate-600', text: 'text-slate-300', border: 'border-slate-500/50' },
+            CERAMIC: { id: 'Ceramic', name: 'เซรามิก', icon: '🏺', color: 'from-cyan-400 to-cyan-600', text: 'text-cyan-400', border: 'border-cyan-500/50' },
+            NATURAL: { id: 'Natural', name: 'ธรรมชาติ', icon: '🌿', color: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400', border: 'border-emerald-500/50' },
+            ADDITIVE: { id: 'Additive', name: 'สารเติมแต่ง', icon: '🧪', color: 'from-fuchsia-400 to-fuchsia-600', text: 'text-fuchsia-400', border: 'border-fuchsia-500/50' }
+        };
+
+        const baseMaterials = [
+            // Polymers
+            { id: 'epoxy resin', name: 'เรซิน (Epoxy)', type: 'Polymer', icon: '🍯' },
+            { id: 'natural rubber', name: 'ยางธรรมชาติ', type: 'Polymer', icon: '🌲' },
+            { id: 'kevlar fabric', name: 'เส้นใยเคฟลาร์', type: 'Polymer', icon: '🧵' },
+            { id: 'nylon fabric', name: 'ไนลอน', type: 'Polymer', icon: '🧦' },
+            { id: 'pvc plastic pipe', name: 'พีวีซี (PVC)', type: 'Polymer', icon: '🚰' },
+            { id: 'pet plastic bottle', name: 'พลาสติก PET', type: 'Polymer', icon: '🍾' },
+            { id: 'teflon coating', name: 'เทฟลอน (PTFE)', type: 'Polymer', icon: '🍳' },
+            { id: 'silicone rubber', name: 'ซิลิโคน', type: 'Polymer', icon: '🧊' },
+            { id: 'polyurethane foam', name: 'โพลียูรีเทน (PU)', type: 'Polymer', icon: '🧽' },
+            { id: 'acrylic glass', name: 'อะคริลิก', type: 'Polymer', icon: '🪧' },
+            { id: 'polycarbonate', name: 'โพลีคาร์บอเนต', type: 'Polymer', icon: '🥽' },
+            { id: 'polystyrene foam', name: 'โพลีสไตรีน (โฟม)', type: 'Polymer', icon: '🥡' },
+            { id: 'polyethylene plastic', name: 'พลาสติก PE', type: 'Polymer', icon: '🛍️' },
+            { id: 'polypropylene plastic', name: 'พลาสติก PP', type: 'Polymer', icon: '🪣' },
+            { id: 'abs plastic', name: 'พลาสติก ABS', type: 'Polymer', icon: '🧱' },
+            { id: 'neoprene fabric', name: 'นีโอพรีน', type: 'Polymer', icon: '🤿' },
+            { id: 'bakelite vintage', name: 'เบกาไลต์', type: 'Polymer', icon: '☎️' },
+            { id: 'melamine resin', name: 'เมลามีน', type: 'Polymer', icon: '🍽️️' },
+            { id: 'liquid latex', name: 'น้ำยางพารา', type: 'Polymer', icon: '🧤' },
+            { id: 'pvb plastic film', name: 'ฟิล์ม PVB', type: 'Polymer', icon: '🎞️' },
+
+            // Metals
+            { id: 'iron ore', name: 'เหล็กดิบ (Iron)', type: 'Metal', icon: '🪨' },
+            { id: 'steel metal', name: 'เหล็กกล้า (Steel)', type: 'Metal', icon: '🔗' },
+            { id: 'aluminum metal', name: 'อะลูมิเนียม', type: 'Metal', icon: '🛸' },
+            { id: 'copper metal', name: 'ทองแดง', type: 'Metal', icon: '🥉' },
+            { id: 'zinc metal', name: 'สังกะสี', type: 'Metal', icon: '🛖' },
+            { id: 'tin metal', name: 'ดีบุก', type: 'Metal', icon: '🥫' },
+            { id: 'gold metal', name: 'ทองคำ', type: 'Metal', icon: '🏆' },
+            { id: 'silver metal', name: 'เงิน', type: 'Metal', icon: '🥈' },
+            { id: 'platinum metal', name: 'แพลตตินัม', type: 'Metal', icon: '💍' },
+            { id: 'titanium metal', name: 'ไทเทเนียม', type: 'Metal', icon: '🦾' },
+            { id: 'nickel metal', name: 'นิกเกิล', type: 'Metal', icon: '🪙' },
+            { id: 'lead metal', name: 'ตะกั่ว', type: 'Metal', icon: '🔋' },
+            { id: 'chromium metal', name: 'โครเมียม', type: 'Metal', icon: '✨' },
+            { id: 'cobalt metal', name: 'โคบอลต์', type: 'Metal', icon: '🧲' },
+            { id: 'magnesium metal', name: 'แมกนีเซียม', type: 'Metal', icon: '🎇' },
+            { id: 'tungsten metal', name: 'ทังสเตน', type: 'Metal', icon: '💡' },
+            { id: 'vanadium metal', name: 'วาเนเดียม', type: 'Metal', icon: '🔧' },
+            { id: 'manganese metal', name: 'แมงกานีส', type: 'Metal', icon: '🪓' },
+            { id: 'bismuth crystal', name: 'บิสมัท', type: 'Metal', icon: '🌈' },
+            { id: 'gallium metal', name: 'แกลเลียม', type: 'Metal', icon: '🌡️' },
+
+            // Ceramics
+            { id: 'cement powder', name: 'ปูนซีเมนต์', type: 'Ceramic', icon: '🌪️' },
+            { id: 'glass material', name: 'เนื้อแก้ว', type: 'Ceramic', icon: '🪟' },
+            { id: 'carbon black powder', name: 'คาร์บอนดำ', type: 'Ceramic', icon: '⚫' },
+            { id: 'fiberglass', name: 'เส้นใยแก้ว', type: 'Ceramic', icon: '❄️' },
+            { id: 'natural clay', name: 'ดินเหนียว', type: 'Ceramic', icon: '🏺' },
+            { id: 'red brick', name: 'อิฐมอญ', type: 'Ceramic', icon: '🧱' },
+            { id: 'porcelain ceramic', name: 'พอร์ซเลน', type: 'Ceramic', icon: '☕' },
+            { id: 'alumina powder', name: 'อะลูมินา', type: 'Ceramic', icon: '⚪' },
+            { id: 'zirconia ceramic', name: 'เซอร์โคเนีย', type: 'Ceramic', icon: '🦷' },
+            { id: 'silicon carbide', name: 'ซิลิคอนคาร์ไบด์', type: 'Ceramic', icon: '🖤' },
+            { id: 'boron carbide', name: 'โบรอนคาร์ไบด์', type: 'Ceramic', icon: '🛡️' },
+            { id: 'graphite material', name: 'แกรไฟต์', type: 'Ceramic', icon: '✏️' },
+            { id: 'diamond gemstone', name: 'เพชร', type: 'Ceramic', icon: '💎' },
+            { id: 'quartz crystal', name: 'ควอตซ์', type: 'Ceramic', icon: '🔮' },
+            { id: 'silica powder', name: 'ซิลิกา (ผงแก้ว)', type: 'Ceramic', icon: '⏳' },
+            { id: 'sand', name: 'ทราย', type: 'Ceramic', icon: '🏖️' },
+            { id: 'limestone', name: 'หินปูน', type: 'Ceramic', icon: '⛰️' },
+            { id: 'gypsum material', name: 'ยิปซัม', type: 'Ceramic', icon: '🩹' },
+            { id: 'asbestos mineral', name: 'แร่ใยหิน', type: 'Ceramic', icon: '🌫️' },
+            { id: 'gravel stones', name: 'หินกรวด', type: 'Ceramic', icon: '🪨' },
+
+            // Natural
+            { id: 'wood sawdust', name: 'ผงไม้/ขี้เลื่อย', type: 'Natural', icon: '🪵' },
+            { id: 'paper material', name: 'กระดาษ', type: 'Natural', icon: '📄' },
+            { id: 'cotton fabric', name: 'ฝ้าย', type: 'Natural', icon: '☁️' },
+            { id: 'silk fabric', name: 'ไหม', type: 'Natural', icon: '👘' },
+            { id: 'wool material', name: 'ขนสัตว์', type: 'Natural', icon: '🐑' },
+            { id: 'leather material', name: 'หนัง', type: 'Natural', icon: '👞' },
+            { id: 'hemp fiber', name: 'ใยกัญชง', type: 'Natural', icon: '🌿' },
+            { id: 'bamboo wood', name: 'ไผ่', type: 'Natural', icon: '🎋' },
+            { id: 'cork wood', name: 'ไม้ก๊อก', type: 'Natural', icon: '🍾' },
+            { id: 'seashell', name: 'เปลือกหอย', type: 'Natural', icon: '🐚' },
+            { id: 'bone material', name: 'กระดูก', type: 'Natural', icon: '🦴' },
+            { id: 'ivory material', name: 'งาช้าง', type: 'Natural', icon: '🐘' },
+            { id: 'beeswax', name: 'ขี้ผึ้ง', type: 'Natural', icon: '🕯' },
+            { id: 'amber gemstone', name: 'อำพัน', type: 'Natural', icon: '🪨' },
+            { id: 'cellulose fiber', name: 'เซลลูโลส', type: 'Natural', icon: '🔬' },
+            { id: 'starch powder', name: 'แป้ง', type: 'Natural', icon: '🥔' },
+            { id: 'lignin powder', name: 'ลิกนิน', type: 'Natural', icon: '🌳' },
+            { id: 'chitin material', name: 'ไคติน', type: 'Natural', icon: '🦐' },
+            { id: 'gelatin powder', name: 'เจลาติน', type: 'Natural', icon: '🍮' },
+            { id: 'coal', name: 'ถ่านหิน', type: 'Natural', icon: '🪨' },
+
+            // Additive
+            { id: 'water liquid', name: 'น้ำ', type: 'Additive', icon: '💧' },
+            { id: 'oil liquid', name: 'น้ำมัน', type: 'Additive', icon: '🛢️' },
+            { id: 'acid liquid', name: 'กรด', type: 'Additive', icon: '🧪' },
+            { id: 'alkaline liquid', name: 'ด่าง/โซดาไฟ', type: 'Additive', icon: '🧼' },
+            { id: 'salt powder', name: 'เกลือ', type: 'Additive', icon: '🧂' },
+            { id: 'sugar powder', name: 'น้ำตาล', type: 'Additive', icon: '🧊' },
+            { id: 'color pigment', name: 'แม่สี', type: 'Additive', icon: '🎨' },
+            { id: 'sulfur powder', name: 'กำมะถัน', type: 'Additive', icon: '💛' },
+            { id: 'phosphorus powder', name: 'ฟอสฟอรัส', type: 'Additive', icon: '🔥' },
+            { id: 'iodine liquid', name: 'ไอโอดีน', type: 'Additive', icon: '🟣' },
+            { id: 'bleach liquid', name: 'สารฟอกขาว', type: 'Additive', icon: '🥼' },
+            { id: 'yeast powder', name: 'ยีสต์', type: 'Additive', icon: '🦠' },
+            { id: 'baking soda', name: 'เบกกิ้งโซดา', type: 'Additive', icon: '🧁' },
+            { id: 'chemical catalyst', name: 'ตัวเร่งปฏิกิริยา', type: 'Additive', icon: '⚡' },
+            { id: 'antioxidant powder', name: 'สารกันบูด', type: 'Additive', icon: '🛡️' },
+            { id: 'uv stabilizer powder', name: 'สารกันยูวี', type: 'Additive', icon: '😎' },
+            { id: 'plasticizer liquid', name: 'สารเสริมสภาพ', type: 'Additive', icon: '💧' },
+            { id: 'foaming agent', name: 'สารเกิดโฟม', type: 'Additive', icon: '🫧' },
+            { id: 'fire retardant powder', name: 'สารหน่วงไฟ', type: 'Additive', icon: '🧯' },
+            { id: 'chemical hardener', name: 'น้ำยาทำให้แข็ง', type: 'Additive', icon: '🧱' }
+        ];
+
+        const recipes = {
+            'carbon black powder,iron ore': { engName: 'Carbon Steel metal', name: 'เหล็กกล้าคาร์บอน (Carbon Steel)', desc: 'ผสมคาร์บอนเข้ากับเหล็กดิบ เพิ่มความแข็งแกร่งอย่างมาก เป็นพื้นฐานของโครงสร้างยุคใหม่', uses: 'โครงสร้างตึก, ชิ้นส่วนรถยนต์', tag: 'โลหะ + เซรามิก' },
+            'copper metal,zinc metal': { engName: 'Brass metal object', name: 'ทองเหลือง (Brass)', desc: 'ทองแดงผสมสังกะสี สวยงามคล้ายทองคำ ทนทานต่อการกัดกร่อน ทนน้ำ', uses: 'เครื่องดนตรี, ก๊อกน้ำ, เครื่องประดับ', tag: 'โลหะ + โลหะ' },
+            'copper metal,tin metal': { engName: 'Bronze metal object', name: 'สำริด (Bronze)', desc: 'โลหะผสมยุคโบราณ แข็งกว่าทองแดงบริสุทธิ์ หล่อขึ้นรูปได้ดี', uses: 'ระฆัง, พระพุทธรูป, เฟือง', tag: 'โลหะ + โลหะ' },
+            'natural rubber,sulfur powder': { engName: 'Vulcanized Rubber tire', name: 'ยางวัลคาไนซ์ (Vulcanized Rubber)', desc: 'การนำยางธรรมชาติมาอบกับกำมะถัน ทำให้ยางคงรูป ไม่ละลายเมื่อร้อน และยืดหยุ่นดีขึ้น', uses: 'พื้นรองเท้า, ท่อยาง, ยางยืด', tag: 'พอลิเมอร์ + สารเติมแต่ง' },
+            'epoxy resin,fiberglass': { engName: 'Fiberglass boat hull', name: 'ไฟเบอร์กลาส (Fiberglass)', desc: 'พลาสติกเสริมใยแก้ว น้ำหนักเบา ขึ้นรูปง่าย มีความแข็งแรง', uses: 'หลังคากระบะ, ตัวถังเรือ', tag: 'พอลิเมอร์ + เซรามิก' },
+            'carbon black powder,epoxy resin': { engName: 'Carbon Fiber CFRP', name: 'คาร์บอนไฟเบอร์ (CFRP)', desc: 'เส้นใยคาร์บอนเคลือบเรซิน แข็งแกร่งกว่าเหล็กแต่น้ำหนักเบากว่ามาก', uses: 'จักรยาน, ชิ้นส่วนซุปเปอร์คาร์', tag: 'เซรามิก + พอลิเมอร์' },
+            'epoxy resin,wood sawdust': { engName: 'Wood Plastic Composite flooring', name: 'ไม้พลาสติก (WPC)', desc: 'ผงไม้ผสมพลาสติก ผิวสัมผัสเหมือนไม้แต่ทนน้ำ ไม่ผุพัง', uses: 'ระเบียงบ้าน, พื้นไม้เทียม', tag: 'พอลิเมอร์ + ธรรมชาติ' },
+            'natural clay,water liquid': { engName: 'Wet sculpting clay', name: 'ดินเหนียวปั้นได้', desc: 'ดินเหนียวที่เติมน้ำในสัดส่วนพอเหมาะ ทำให้ขึ้นรูปทรงต่างๆ ได้', uses: 'เครื่องปั้นดินเผาก่อนเผา', tag: 'เซรามิก + สารเติมแต่ง' },
+            'cement powder,sand': { engName: 'Cement mortar', name: 'ปูนทราย (มอร์ตาร์)', desc: 'ปูนซีเมนต์ผสมทรายและน้ำ ใช้สำหรับการก่อและฉาบ', uses: 'ก่ออิฐ, ฉาบผนัง', tag: 'เซรามิก + เซรามิก' },
+            'paper material,beeswax': { engName: 'Wax paper packaging', name: 'กระดาษไข (Wax Paper)', desc: 'กระดาษเคลือบขี้ผึ้ง กันน้ำและกันความชื้น', uses: 'ห่ออาหาร, กระดาษรองอบ', tag: 'ธรรมชาติ + ธรรมชาติ' },
+            'chemical hardener,silicone rubber': { engName: 'Silicone mold for resin', name: 'ซิลิโคนหล่อแบบ', desc: 'ยางซิลิโคนผสมน้ำยาทำให้แข็งตัว ใช้ทำแม่พิมพ์ที่มีความละเอียดสูง', uses: 'แม่พิมพ์สบู่, เรซิน, โมเดล', tag: 'พอลิเมอร์ + สารเติมแต่ง' },
+            'acid liquid,lead metal': { engName: 'Lead acid car battery', name: 'แบตเตอรี่ตะกั่วกรด', desc: 'แผ่นตะกั่วจุ่มในกรดซัลฟิวริก เกิดปฏิกิริยาเคมีกักเก็บไฟฟ้าได้', uses: 'แบตเตอรี่รถยนต์', tag: 'โลหะ + สารเติมแต่ง' },
+
+            'carbon black powder,chromium metal,iron ore': { engName: 'Stainless Steel cookware', name: 'สแตนเลส (Stainless Steel)', desc: 'เหล็กกล้าผสมโครเมียม ทำให้เกิดฟิล์มป้องกันสนิม', uses: 'เครื่องครัว, อุปกรณ์การแพทย์', tag: 'โลหะ (3 ชนิด)' },
+            'carbon black powder,natural rubber,sulfur powder': { engName: 'Car tire tread', name: 'ยางรถยนต์เสริมคาร์บอน', desc: 'ยางวัลคาไนซ์ผสมเขม่าคาร์บอน เพิ่มความทนทานต่อการเสียดสี ทนทานต่อถนน', uses: 'ล้อรถยนต์ทั่วไป', tag: 'พอลิเมอร์ + เซรามิก + สารเคมี' },
+            'cement powder,sand,water liquid': { engName: 'Wet concrete mixing', name: 'ปูนมอร์ตาร์เปียก', desc: 'ปูนซีเมนต์ ทราย และน้ำ คลุกเคล้าจนเข้ากัน พร้อมนำไปใช้งานก่อฉาบ', uses: 'ก่อผนังอิฐ, ปรับระดับพื้น', tag: 'เซรามิก + ธรรมชาติ/สาร' },
+            'aluminum metal,epoxy resin,fiberglass': { engName: 'GLARE aviation material fuselage', name: 'แกลร์ (GLARE)', desc: 'สลับชั้นอะลูมิเนียมกับไฟเบอร์กลาส ทนทานต่อการล้าและรอยร้าว', uses: 'ลำตัวเครื่องบินโดยสาร', tag: 'โลหะ + เซรามิก + พอลิเมอร์' },
+            'epoxy resin,glass material,pvb plastic film': { engName: 'Laminated glass windshield', name: 'กระจกลามิเนต (Laminated Glass)', desc: 'กระจก 2 แผ่นประกบฟิล์ม PVB ด้วยเรซิน เมื่อแตกจะไม่ร่วงหล่น', uses: 'กระจกหน้ารถยนต์, หน้าต่างตึกสูง', tag: 'เซรามิก + พอลิเมอร์' },
+            'copper metal,gold metal,silver metal': { engName: 'Rose Gold jewelry ring', name: 'ทองคำ 18K (Pink/Yellow Gold)', desc: 'ทองคำบริสุทธิ์นิ่มเกินไป ต้องผสมเงินและทองแดงเพื่อให้แข็งแรงพอจะทำเครื่องประดับ', uses: 'แหวน, สร้อยคอ', tag: 'อัลลอยด์ (โลหะ 3 ชนิด)' },
+            'fire retardant powder,natural clay,water liquid': { engName: 'Fire Brick furnace', name: 'อิฐทนไฟ (Fire Brick)', desc: 'ดินเหนียวผสมสารหน่วงไฟและน้ำ ทนความร้อนสูงมาก ไม่หลอมละลาย', uses: 'เตาหลอมโลหะ, เตาอบพิซซ่า', tag: 'เซรามิกพิเศษ' },
+            'chemical hardener,color pigment,silicone rubber': { engName: 'Colorful Silicone Mold', name: 'ซิลิโคนแม่พิมพ์สีสัน', desc: 'เพิ่มแม่สีเข้าไปในกระบวนการหล่อแม่พิมพ์ เพื่อจำแนกประเภทความแข็งของซิลิโคน', uses: 'อุตสาหกรรมหล่อพลาสติก', tag: 'พอลิเมอร์ประยุกต์' },
+
+            'cement powder,gravel stones,sand,water liquid': { engName: 'Concrete road surface', name: 'คอนกรีต (Concrete)', desc: 'ส่วนผสมของหิน ทราย ปูนซีเมนต์ และน้ำ แข็งตัวกลายเป็นหินเทียมที่รับแรงกดได้มหาศาล', uses: 'พื้นถนน, ฐานราก', tag: 'วัสดุผสม (เซรามิกหลัก)' },
+            'carbon black powder,chromium metal,iron ore,nickel metal': { engName: 'Industrial chemical tank stainless steel', name: 'สแตนเลสเกรดออสเทนนิติก (304/316)', desc: 'เพิ่มนิกเกิลเข้าไปในสแตนเลส ทำให้ทนการกัดกร่อนจากกรดและเกลือได้ดีเยี่ยม', uses: 'แทงก์น้ำสารเคมี, อุปกรณ์เรือ', tag: 'ซุปเปอร์อัลลอยด์' },
+            'epoxy resin,kevlar fabric,nylon fabric,zirconia ceramic': { engName: 'Military bulletproof vest composite', name: 'เกราะกันกระสุนคอมโพสิต', desc: 'แผ่นเซรามิกรับแรงกระแทก ซ้อนด้วยเคฟลาร์เหนียว และไนลอนเคลือบเรซิน', uses: 'เสื้อเกราะทหารระดับสูง', tag: 'Advanced Composite' },
+            'carbon black powder,natural rubber,steel metal,sulfur powder': { engName: 'Steel-belted radial tire section', name: 'ยางเรเดียลเสริมใยเหล็ก', desc: 'ยางรถยนต์ที่มีการฝังลวดเหล็กกล้าเข้าไปด้านใน เพิ่มความต้านทานการระเบิด', uses: 'ยางรถสปอร์ต, รถบรรทุก', tag: 'Polymer + Metal Composite' },
+
+            'cement powder,gravel stones,iron ore,sand,water liquid': { engName: 'Reinforced concrete structure building', name: 'คอนกรีตเสริมเหล็ก (Reinforced Concrete)', desc: 'สุดยอดวัสดุก่อสร้าง! คอนกรีตรับแรงอัด เหล็กรับแรงดึง ประกอบกันเป็นโครงสร้างที่ตึกระฟ้าขาดไม่ได้', uses: 'ตึกระฟ้า, สะพานแขวน, เขื่อน', tag: 'วัสดุผสมระดับโครงสร้าง (Macro-composite)' },
+            'aluminum metal,copper metal,magnesium metal,manganese metal,zinc metal': { engName: 'Aerospace Duralumin satellite part', name: 'ดูราลูมินเกรดอวกาศ (Aerospace Duralumin)', desc: 'โลหะผสมอะลูมิเนียมขั้นสูงที่ควบคุมสัดส่วนธาตุต่างๆ อย่างแม่นยำ เบาแต่ทนทานสุดยอด', uses: 'กระสวยอวกาศ, ดาวเทียม', tag: 'Aerospace Alloy' },
+        };
+
+        const RECOMMENDED_RECIPES = [
+            'carbon black powder,iron ore', 
+            'copper metal,zinc metal', 
+            'epoxy resin,fiberglass', 
+            'cement powder,gravel stones,sand,water liquid' 
+        ];
+
+        // App State
+        let selectedItems = [];
+        let mixResult = null;
+        let isMixing = false;
+        let discoveredRecipes = new Set();
+        let searchQuery = "";
+        let activeCategory = "All";
+        const MAX_MIX_ITEMS = 5;
+        const totalRecipes = Object.keys(recipes).length;
+        let notificationTimer = null;
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('total-count').innerText = totalRecipes;
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                searchQuery = e.target.value;
+                renderInventory();
+            });
+            renderCategoryFilters();
+            renderInventory();
+            renderWorkbench();
+            renderResult();
+            renderRecommended();
+        });
+
+        // Helper: Image Generator URL
+        function getImageUrl(prompt, type) {
+            const finalPrompt = type === 'material' 
+                ? `${prompt} raw material real photo`
+                : `${prompt} real object product photography`;
+            const safePrompt = encodeURIComponent(finalPrompt);
+            return `https://tse2.mm.bing.net/th?q=${safePrompt}&w=300&h=300&c=7&rs=1&p=0&dpr=1&pid=1.7`;
+        }
+
+        // Helpers for fallback images if failed to load
+        function getFallbackHtml(char) {
+            return `<div class="flex items-center justify-center bg-slate-800 text-slate-500 font-bold text-xl w-full h-full">${char || '?'}</div>`;
+        }
+
+        function showNotification(msg) {
+            const toast = document.getElementById('notification-toast');
+            toast.innerText = msg;
+            toast.classList.remove('hidden');
+            if (notificationTimer) clearTimeout(notificationTimer);
+            notificationTimer = setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3500);
+        }
+
+        function handleCategoryClick(catId) {
+            activeCategory = catId;
+            renderCategoryFilters();
+            renderInventory();
+        }
+
+        function handleSelectItem(matId) {
+            mixResult = null;
+            if (selectedItems.length >= MAX_MIX_ITEMS) {
+                showNotification(`🧪 ช่องผสมเต็มแล้ว! (สูงสุด ${MAX_MIX_ITEMS} ชนิด) กรุณาเอาวัสดุออก หรือกด 'เริ่มสังเคราะห์'`);
+                return;
+            }
+            if (selectedItems.find(item => item.id === matId)) {
+                showNotification("⚠️ คุณเลือกวัสดุนี้ไปแล้ว ลองหยิบวัสดุอื่นมาผสมกันดูนะ");
+                return;
+            }
+            const mat = baseMaterials.find(m => m.id === matId);
+            selectedItems.push(mat);
+            renderInventory(); // update selected state
+            renderWorkbench();
+            renderResult();
+        }
+
+        function handleRemoveItem(index) {
+            selectedItems.splice(index, 1);
+            mixResult = null;
+            renderInventory();
+            renderWorkbench();
+            renderResult();
+        }
+
+        function handleReset() {
+            selectedItems = [];
+            mixResult = null;
+            renderInventory();
+            renderWorkbench();
+            renderResult();
+        }
+
+        function handleAutoFill(recipeKey) {
+            const materialIds = recipeKey.split(',');
+            selectedItems = materialIds.map(id => baseMaterials.find(m => m.id === id)).filter(Boolean);
+            mixResult = null;
+            renderInventory();
+            renderWorkbench();
+            renderResult();
+            showNotification("✅ จัดเตรียมวัตถุดิบสำหรับสูตรแนะนำเรียบร้อยแล้ว กด 'เริ่มสังเคราะห์' ได้เลย!");
+            document.getElementById('workbench-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function handleMix() {
+            if (selectedItems.length < 2) {
+                showNotification("ต้องเลือกวัสดุอย่างน้อย 2 ชนิดเพื่อทำการผสม!");
+                return;
+            }
+            isMixing = true;
+            mixResult = null;
+            renderWorkbench(); // update button state
+            renderResult(); // show loading animation
+
+            setTimeout(() => {
+                isMixing = false;
+                const ids = selectedItems.map(item => item.id).sort();
+                const recipeKey = ids.join(',');
+                
+                if (recipes[recipeKey]) {
+                    mixResult = { success: true, ...recipes[recipeKey] };
+                    discoveredRecipes.add(recipeKey);
+                    updateStats();
+                    renderRecommended(); // Update unlocked badges
+                } else {
+                    let failMessage = 'ปฏิกิริยาไม่เสถียร! วัสดุเหล่านี้ผสมกันไม่ได้เกิดเป็นวัสดุที่ใช้งานได้จริง ลองจับคู่ใหม่ดูนะ';
+                    let failEngName = 'pile of toxic chemical sludge, dirty';
+                    if (selectedItems.length > 3) {
+                        failMessage = 'ส่วนผสมซับซ้อนเกินไปและขัดแย้งกันเอง! กลายเป็นก้อนของแข็งไร้ประโยชน์จากห้องแล็บ';
+                        failEngName = 'broken pieces of unidentified grey solid material waste';
+                    }
+                    mixResult = { 
+                        success: false, 
+                        name: 'ตะกอนสารเคมี (ล้มเหลว)', 
+                        engName: failEngName,
+                        desc: failMessage
+                    };
+                }
+                
+                renderWorkbench();
+                renderResult();
+                
+                setTimeout(() => {
+                    document.getElementById('result-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+
+            }, 2500);
+        }
+
+        function updateStats() {
+            document.getElementById('discovered-count').innerText = discoveredRecipes.size;
+            document.getElementById('progress-bar').style.width = `${(discoveredRecipes.size / totalRecipes) * 100}%`;
+        }
+
+        function renderCategoryFilters() {
+            const container = document.getElementById('category-filters');
+            let html = `<button onclick="handleCategoryClick('All')" class="shrink-0 px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all snap-start ${activeCategory === 'All' ? 'bg-slate-700 text-white shadow-md' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">All</button>`;
+            
+            Object.values(CATEGORIES).forEach(cat => {
+                const isActive = activeCategory === cat.id;
+                html += `
+                    <button onclick="handleCategoryClick('${cat.id}')" class="shrink-0 px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all snap-start ${isActive ? `bg-slate-800 border ${cat.border} ${cat.text} shadow-[0_0_10px_rgba(255,255,255,0.05)]` : 'bg-slate-900/50 border border-transparent text-slate-500 hover:text-slate-300'}">
+                        <span>${cat.icon}</span> ${cat.name}
+                    </button>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById('inventory-grid');
+            const filtered = baseMaterials.filter(mat => {
+                const matchesSearch = mat.name.toLowerCase().includes(searchQuery.toLowerCase());
+                const matchesCategory = activeCategory === "All" || mat.type === activeCategory;
+                return matchesSearch && matchesCategory;
+            });
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-sm">ไม่พบวัสดุที่ค้นหา</div>`;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(mat => {
+                const isSelected = selectedItems.find(item => item.id === mat.id);
+                const imgSrc = getImageUrl(mat.id, 'material');
+                html += `
+                    <button onclick="handleSelectItem('${mat.id}')" ${isSelected ? 'disabled' : ''} class="relative flex flex-col items-center justify-start p-2 md:p-2.5 rounded-xl border transition-all duration-300 group overflow-hidden ${isSelected ? 'border-slate-700 bg-slate-900 opacity-40 cursor-not-allowed scale-95 grayscale' : 'border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-cyan-500 hover:-translate-y-1 hover:shadow-lg'}">
+                        <div class="w-14 h-14 sm:w-20 sm:h-20 mb-1.5 md:mb-2 rounded-lg overflow-hidden border border-slate-600/50 relative z-10 shadow-inner group-hover:scale-105 transition-transform bg-slate-900 shrink-0">
+                            <img src="${imgSrc}" alt="${mat.name}" class="w-full h-full object-cover bg-slate-900" loading="lazy" onerror="this.onerror=null; this.outerHTML='${getFallbackHtml(mat.name.charAt(0))}'" />
+                            <div class="absolute top-0 right-0 bg-black/70 backdrop-blur-sm text-[10px] px-1 py-0.5 rounded-bl-lg border-b border-l border-slate-600/50 z-20">${mat.icon}</div>
+                            ${isSelected ? `<div class="absolute inset-0 flex items-center justify-center bg-black/60 z-30"><span class="text-xl md:text-2xl drop-shadow-lg">✅</span></div>` : ''}
+                        </div>
+                        <div class="text-[10px] md:text-xs font-bold text-slate-300 text-center leading-tight z-10 px-0.5 md:px-1 w-full truncate" title="${mat.name}">${mat.name}</div>
+                    </button>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        function renderWorkbench() {
+            const slotsContainer = document.getElementById('workbench-slots');
+            let slotsHtml = '';
+            
+            selectedItems.forEach((item, index) => {
+                const imgSrc = getImageUrl(item.id, 'material');
+                if (index > 0) {
+                    slotsHtml += `<div class="text-xl md:text-2xl font-black text-slate-600 animate-pop-in">➕</div>`;
+                }
+                slotsHtml += `
+                    <div onclick="handleRemoveItem(${index})" class="w-16 h-16 sm:w-20 sm:h-20 md:w-32 md:h-32 rounded-xl md:rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-[2px] md:border-[3px] relative group animate-pop-in overflow-hidden bg-slate-800 shadow-[0_0_20px_rgba(0,0,0,0.4)] hover:shadow-red-500/30 hover:border-red-500/50" style="border-color: rgba(255,255,255,0.05)">
+                        <img src="${imgSrc}" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-20 transition-opacity" onerror="this.onerror=null; this.style.display='none'" />
+                        <span class="text-xl md:text-3xl z-10 bg-black/60 p-1 md:p-1.5 rounded-full backdrop-blur-md border border-white/10 mb-0.5 md:mb-2 shadow-lg">${item.icon}</span>
+                        <span class="text-[8px] md:text-xs font-bold text-center px-1 md:px-2 py-0.5 z-10 bg-black/70 backdrop-blur-md rounded border border-white/10 text-white shadow-lg truncate w-11/12">${item.name}</span>
+                        <div class="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20 backdrop-blur-sm">
+                            <span class="text-white font-bold text-[10px] md:text-sm drop-shadow-md">ออก ❌</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (selectedItems.length < MAX_MIX_ITEMS) {
+                if (selectedItems.length > 0) {
+                    slotsHtml += `<div class="text-xl md:text-2xl font-black text-slate-700">➕</div>`;
+                }
+                slotsHtml += `
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 md:w-32 md:h-32 rounded-xl md:rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-600 bg-slate-900/50 text-slate-500 shadow-inner">
+                        <span class="text-[10px] md:text-sm font-medium">เพิ่มวัสดุ</span>
+                        <span class="text-[8px] md:text-xs mt-0.5 md:mt-1">(${selectedItems.length}/${MAX_MIX_ITEMS})</span>
+                    </div>
+                `;
+            }
+            slotsContainer.innerHTML = slotsHtml;
+
+            // Render Mix Button
+            const btnContainer = document.getElementById('mix-button-container');
+            const canMix = selectedItems.length >= 2 && !isMixing;
+            let btnHtml = `
+                <button onclick="handleMix()" ${!canMix ? 'disabled' : ''} class="relative overflow-hidden px-6 md:px-10 py-3 md:py-3.5 rounded-2xl font-extrabold text-sm md:text-lg tracking-wide shadow-2xl transition-all duration-300 transform ${canMix ? 'bg-slate-800 text-white border border-cyan-500/50 hover:scale-105 hover:shadow-[0_0_40px_rgba(34,212,238,0.5)] group' : 'bg-slate-900 text-slate-600 cursor-not-allowed border border-slate-800'}">
+                    ${canMix ? '<div class="absolute inset-0 bg-gradient-to-r from-cyan-600 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity"></div>' : ''}
+            `;
+            
+            if (isMixing) {
+                btnHtml += `
+                    <span class="flex items-center gap-2 md:gap-3 text-cyan-300 relative z-10">
+                        <div class="w-4 h-4 md:w-5 md:h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                        กำลังประมวลผล...
+                    </span>
+                `;
+            } else {
+                btnHtml += `
+                    <span class="relative z-10 flex items-center gap-1.5 md:gap-2">
+                        <span class="text-lg md:text-xl">✨</span> เริ่มสังเคราะห์ 
+                        <span class="bg-black/30 text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-md ml-1 shadow-inner border border-white/10">${selectedItems.length} ชนิด</span>
+                    </span>
+                `;
+            }
+            btnHtml += `</button>`;
+            btnContainer.innerHTML = btnHtml;
+        }
+
+        function renderResult() {
+            const container = document.getElementById('result-section');
+            if (!isMixing && !mixResult) {
+                container.innerHTML = `<div class="h-[150px] md:h-[200px] flex items-center justify-center text-slate-600 text-xs md:text-sm italic px-4 text-center">ลากหรือคลิกวัสดุด้านบน เพื่อเริ่มการทดลอง...</div>`;
+                return;
+            }
+
+            if (isMixing) {
+                container.innerHTML = `
+                    <div class="h-[300px] md:h-[350px] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm z-10">
+                        <div class="relative w-20 h-20 md:w-24 md:h-24">
+                            <div class="absolute inset-0 border-[4px] md:border-[6px] border-slate-800 rounded-full"></div>
+                            <div class="absolute inset-0 border-[4px] md:border-[6px] border-cyan-500 border-t-transparent border-l-transparent rounded-full animate-[spin_1s_linear_infinite]"></div>
+                            <div class="absolute inset-2 md:inset-3 border-[4px] md:border-[6px] border-fuchsia-500 border-b-transparent border-r-transparent rounded-full animate-[spin_1.5s_linear_reverse_infinite]"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-2xl md:text-3xl animate-pulse">🧬</div>
+                        </div>
+                        <p class="text-cyan-400 font-bold mt-4 md:mt-6 tracking-widest uppercase text-xs md:text-sm animate-pulse">Synthesizing Materials...</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (mixResult) {
+                const imgSrc = getImageUrl(mixResult.engName || mixResult.name, 'product');
+                const gradientClass = mixResult.success ? 'from-cyan-950/90 to-indigo-950/90' : 'from-red-950/90 to-orange-950/90';
+                const borderShadowClass = mixResult.success ? 'border-cyan-500/40 shadow-[0_0_50px_rgba(34,212,238,0.3)]' : 'border-red-500/40 shadow-[0_0_50px_rgba(239,68,68,0.3)]';
+                const titleColor = mixResult.success ? 'text-white' : 'text-red-400';
+                
+                let html = `
+                    <div class="p-5 md:p-10 w-full min-h-[300px] md:min-h-[350px] animate-slide-up bg-gradient-to-br ${gradientClass} flex flex-col justify-center">
+                        <div class="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 max-w-4xl mx-auto w-full">
+                            <div class="relative flex items-center justify-center w-40 h-40 md:w-64 md:h-64 rounded-2xl md:rounded-3xl shrink-0 overflow-hidden border-4 ${borderShadowClass}">
+                                <img src="${imgSrc}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700 ${!mixResult.success ? 'grayscale contrast-125 brightness-75' : ''}" onerror="this.onerror=null; this.outerHTML='${getFallbackHtml(mixResult.name.charAt(0))}'" />
+                                ${mixResult.success ? '<div class="absolute -top-2 -right-2 md:-top-3 md:-right-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-yellow-950 text-[10px] md:text-xs font-black px-3 py-1 md:px-4 md:py-1.5 rounded-full shadow-lg transform rotate-12 uppercase tracking-wide border border-yellow-200 z-10">สำเร็จ!</div>' : ''}
+                            </div>
+                            <div class="flex-1 text-center md:text-left w-full">
+                                <div class="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 mb-4">
+                                    <h3 class="text-2xl md:text-4xl font-extrabold tracking-tight ${titleColor}">${mixResult.name}</h3>
+                                    ${mixResult.success ? `<span class="bg-indigo-500/20 border border-indigo-500/50 text-indigo-300 text-[10px] md:text-xs px-2.5 py-1 rounded-full font-bold shadow-inner">${mixResult.tag}</span>` : ''}
+                                </div>
+                                <p class="text-slate-300 text-sm md:text-lg mb-5 md:mb-6 leading-relaxed bg-black/30 p-4 md:p-5 rounded-xl md:rounded-2xl border border-white/5 backdrop-blur-sm shadow-inner text-left">${mixResult.desc}</p>
+                `;
+                
+                if (mixResult.success) {
+                    html += `
+                                <div class="flex items-start gap-3 md:gap-4 bg-cyan-900/30 p-4 md:p-5 rounded-xl md:rounded-2xl border border-cyan-500/30 shadow-lg relative overflow-hidden text-left">
+                                    <div class="absolute top-0 right-0 w-24 h-24 md:w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                                    <div class="text-2xl md:text-3xl mt-0.5 md:mt-1 drop-shadow-md shrink-0">🛠️</div>
+                                    <div class="relative z-10">
+                                        <strong class="text-cyan-400 block mb-1 text-xs md:text-sm uppercase tracking-wide">การประยุกต์ใช้งาน:</strong>
+                                        <span class="text-slate-200 leading-snug block text-sm md:text-lg">${mixResult.uses}</span>
+                                    </div>
+                                </div>
+                    `;
+                }
+
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML = html;
+            }
+        }
+
+        function renderRecommended() {
+            const container = document.getElementById('recommended-grid');
+            let html = '';
+            RECOMMENDED_RECIPES.forEach(recipeKey => {
                 const recipeInfo = recipes[recipeKey];
                 const isDiscovered = discoveredRecipes.has(recipeKey);
+                const imgSrc = getImageUrl(recipeInfo.engName, 'product');
                 
-                return (
-                   <div key={recipeKey} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden flex flex-col hover:border-cyan-500/50 hover:bg-slate-800 transition-all group">
-                      <div className="h-40 relative overflow-hidden bg-slate-900 border-b border-slate-700/50">
-                         <MaterialImage 
-                            prompt={recipeInfo.engName} 
-                            alt={recipeInfo.name} 
-                            type="product" 
-                            className="w-full h-full opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" 
-                         />
-                         {isDiscovered && (
-                            <div className="absolute top-3 right-3 bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg backdrop-blur-sm z-10 flex items-center gap-1">
-                               <span>✅</span> ปลดล็อกแล้ว
-                            </div>
-                         )}
-                      </div>
-                      <div className="p-4 flex flex-col flex-1">
-                         <h3 className="font-bold text-cyan-400 text-lg mb-1">{recipeInfo.name}</h3>
-                         <p className="text-xs text-slate-400 mb-4 line-clamp-2 leading-relaxed">{recipeInfo.desc}</p>
-                         <button 
-                            onClick={() => handleAutoFill(recipeKey)}
-                            className="mt-auto w-full py-2 bg-slate-700 hover:bg-cyan-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-md border border-slate-600 hover:border-cyan-400"
-                         >
-                            ลองผสมสูตรนี้ 🧪
-                         </button>
-                      </div>
-                   </div>
-                );
-             })}
-          </div>
-        </section>
-
-      </main>
-      
-      {/* Footer / Credit */}
-      <footer className="mt-12 pb-6 text-center w-full relative z-10">
-        <p className="text-slate-400 text-sm font-medium px-4 py-2 bg-slate-900/50 inline-block rounded-full border border-slate-800/50 shadow-inner">
-          ✨ พัฒนาโดย <span className="text-cyan-400 font-bold tracking-wide">Mr.Metawat Phongsaphang</span> ✨
-        </p>
-      </footer>
-      
-      {/* Global Styles */}
-      <style dangerouslySetInnerHTML={{__html: `
-        /* Custom Scrollbar for Inventory */
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+                html += `
+                    <div class="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden flex flex-col hover:border-cyan-500/50 hover:bg-slate-800 transition-all group">
+                        <div class="h-40 relative overflow-hidden bg-slate-900 border-b border-slate-700/50">
+                            <img src="${imgSrc}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" onerror="this.onerror=null; this.outerHTML='${getFallbackHtml(recipeInfo.name.charAt(0))}'" />
+                            ${isDiscovered ? `<div class="absolute top-3 right-3 bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg backdrop-blur-sm z-10 flex items-center gap-1"><span>✅</span> ปลดล็อกแล้ว</div>` : ''}
+                        </div>
+                        <div class="p-4 flex flex-col flex-1">
+                            <h3 class="font-bold text-cyan-400 text-lg mb-1">${recipeInfo.name}</h3>
+                            <p class="text-xs text-slate-400 mb-4 line-clamp-2 overflow-hidden" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${recipeInfo.desc}</p>
+                            <button onclick="handleAutoFill('${recipeKey}')" class="mt-auto w-full py-2 bg-slate-700 hover:bg-cyan-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-md border border-slate-600 hover:border-cyan-400">
+                                ลองผสมสูตรนี้ 🧪
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
-        @media (min-width: 768px) {
-          .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-          }
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(15, 23, 42, 0.5);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(51, 65, 85, 0.8);
-          border-radius: 10px;
-          border: 1px solid rgba(255,255,255,0.05);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(71, 85, 105, 1);
-        }
-
-        /* Hide scrollbar for categories on mobile */
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-
-        @keyframes slide-down {
-          0% { opacity: 0; transform: translate(-50%, -20px); }
-          100% { opacity: 1; transform: translate(-50%, 0); }
-        }
-        @keyframes slide-up {
-          0% { opacity: 0; transform: translateY(20px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pop-in {
-          0% { opacity: 0; transform: scale(0.5); }
-          70% { transform: scale(1.1); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-      `}} />
-    </div>
-  );
-}
+    </script>
+</body>
+</html>
