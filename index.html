@@ -45,7 +45,7 @@
 
     <header class="bg-slate-900 border-b border-slate-800 shadow-2xl relative overflow-hidden sticky top-0 z-50">
         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-indigo-500 to-fuchsia-500"></div>
-        <div class="max-w-7xl mx-auto p-3 md:p-6 flex flex-col md:flex-row items-center justify-between relative z-10 gap-4">
+        <div class="w-full max-w-[98%] mx-auto p-3 md:p-6 flex flex-col md:flex-row items-center justify-between relative z-10 gap-4">
             <div class="flex items-center gap-3 md:gap-4">
                 <div class="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl md:text-3xl shadow-[0_0_15px_rgba(34,212,238,0.2)]">🔬</div>
                 <div>
@@ -67,9 +67,9 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto mt-4 md:mt-6 px-3 md:px-4 flex flex-col gap-4 md:gap-6">
+    <main class="w-full max-w-[98%] mx-auto mt-4 md:mt-6 px-3 md:px-6 flex flex-col gap-4 md:gap-6">
         
-        <section class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden flex flex-col max-h-[400px] md:max-h-[450px]">
+        <section class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden flex flex-col max-h-[400px] md:max-h-[450px] xl:max-h-[600px] 2xl:max-h-[700px]">
             <div class="p-3 md:p-4 bg-slate-800/50 border-b border-slate-700/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 md:gap-4">
                 <h2 class="font-bold text-base md:text-lg text-slate-200 flex items-center gap-2 shrink-0">
                     <span class="text-lg md:text-xl">📦</span> คลังวัตถุดิบ <span class="text-slate-500 font-normal text-xs md:text-sm">(<span id="inventory-count">100</span> ชนิด)</span>
@@ -87,7 +87,7 @@
             </div>
 
             <div class="p-3 md:p-4 overflow-y-auto custom-scrollbar flex-1 bg-slate-900/50">
-                <div id="inventory-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-4">
+                <div id="inventory-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-2 md:gap-4">
                     <!-- Inventory Items dynamically injected here -->
                 </div>
             </div>
@@ -103,7 +103,7 @@
                     🔄 ล้างโต๊ะผสม
                 </button>
 
-                <div id="workbench-slots" class="flex flex-wrap items-center justify-center gap-2 md:gap-5 relative z-10 w-full max-w-4xl min-h-[120px] md:min-h-[160px]">
+                <div id="workbench-slots" class="flex flex-wrap items-center justify-center gap-2 md:gap-5 relative z-10 w-full max-w-6xl min-h-[120px] md:min-h-[160px]">
                     <!-- Selected Items dynamically injected here -->
                 </div>
 
@@ -585,7 +585,7 @@
                 
                 let html = `
                     <div class="p-5 md:p-10 w-full min-h-[300px] md:min-h-[350px] animate-slide-up bg-gradient-to-br ${gradientClass} flex flex-col justify-center">
-                        <div class="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 max-w-4xl mx-auto w-full">
+                        <div class="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-10 max-w-6xl mx-auto w-full">
                             <div class="relative flex items-center justify-center w-40 h-40 md:w-64 md:h-64 rounded-2xl md:rounded-3xl shrink-0 overflow-hidden border-4 ${borderShadowClass}">
                                 <img src="${imgSrc}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700 ${!mixResult.success ? 'grayscale contrast-125 brightness-75' : ''}" onerror="this.onerror=null; this.outerHTML='${getFallbackHtml(mixResult.name.charAt(0))}'" />
                                 ${mixResult.success ? '<div class="absolute -top-2 -right-2 md:-top-3 md:-right-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-yellow-950 text-[10px] md:text-xs font-black px-3 py-1 md:px-4 md:py-1.5 rounded-full shadow-lg transform rotate-12 uppercase tracking-wide border border-yellow-200 z-10">สำเร็จ!</div>' : ''}
