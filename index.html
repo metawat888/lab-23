@@ -1,992 +1,712 @@
-<!DOCTYPE html>
-<html lang="th" class="h-full scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MatEng Pro: เรียนรู้วัสดุวิศวกรรมฉบับนักเรียน 🚀</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Prompt', 'sans-serif'],
-                        display: ['Mali', 'cursive'], // Fun font for headings
-                    },
-                    colors: {
-                        brand: {
-                            blue: '#4361ee',
-                            pink: '#f72585',
-                            yellow: '#fcca46',
-                            green: '#4cc9f0',
-                            purple: '#7209b7'
-                        }
-                    },
-                    animation: {
-                        'float': 'float 3s ease-in-out infinite',
-                        'wiggle': 'wiggle 1s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-10px)' },
-                        },
-                        wiggle: {
-                            '0%, 100%': { transform: 'rotate(-3deg)' },
-                            '50%': { transform: 'rotate(3deg)' },
-                        }
-                    }
-                }
-            }
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+
+// กำหนดหมวดหมู่และสีประจำหมวด
+const CATEGORIES = {
+  POLYMER: { id: 'Polymer', name: 'พอลิเมอร์', icon: '🧬', color: 'from-blue-400 to-blue-600', text: 'text-blue-400', border: 'border-blue-500/50' },
+  METAL: { id: 'Metal', name: 'โลหะ', icon: '⚙️', color: 'from-slate-400 to-slate-600', text: 'text-slate-300', border: 'border-slate-500/50' },
+  CERAMIC: { id: 'Ceramic', name: 'เซรามิก', icon: '🏺', color: 'from-cyan-400 to-cyan-600', text: 'text-cyan-400', border: 'border-cyan-500/50' },
+  NATURAL: { id: 'Natural', name: 'ธรรมชาติ', icon: '🌿', color: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400', border: 'border-emerald-500/50' },
+  ADDITIVE: { id: 'Additive', name: 'สารเติมแต่ง', icon: '🧪', color: 'from-fuchsia-400 to-fuchsia-600', text: 'text-fuchsia-400', border: 'border-fuchsia-500/50' }
+};
+
+// ฐานข้อมูลวัสดุตั้งต้น 100 ชนิด
+const baseMaterials = [
+  // === พอลิเมอร์ (20) ===
+  { id: 'epoxy resin', name: 'เรซิน (Epoxy)', type: 'Polymer', icon: '🍯' },
+  { id: 'natural rubber', name: 'ยางธรรมชาติ', type: 'Polymer', icon: '🌲' },
+  { id: 'kevlar fabric', name: 'เส้นใยเคฟลาร์', type: 'Polymer', icon: '🧵' },
+  { id: 'nylon fabric', name: 'ไนลอน', type: 'Polymer', icon: '🧦' },
+  { id: 'pvc plastic pipe', name: 'พีวีซี (PVC)', type: 'Polymer', icon: '🚰' },
+  { id: 'pet plastic bottle', name: 'พลาสติก PET', type: 'Polymer', icon: '🍾' },
+  { id: 'teflon coating', name: 'เทฟลอน (PTFE)', type: 'Polymer', icon: '🍳' },
+  { id: 'silicone rubber', name: 'ซิลิโคน', type: 'Polymer', icon: '🧊' },
+  { id: 'polyurethane foam', name: 'โพลียูรีเทน (PU)', type: 'Polymer', icon: '🧽' },
+  { id: 'acrylic glass', name: 'อะคริลิก', type: 'Polymer', icon: '🪧' },
+  { id: 'polycarbonate', name: 'โพลีคาร์บอเนต', type: 'Polymer', icon: '🥽' },
+  { id: 'polystyrene foam', name: 'โพลีสไตรีน (โฟม)', type: 'Polymer', icon: '🥡' },
+  { id: 'polyethylene plastic', name: 'พลาสติก PE', type: 'Polymer', icon: '🛍️' },
+  { id: 'polypropylene plastic', name: 'พลาสติก PP', type: 'Polymer', icon: '🪣' },
+  { id: 'abs plastic', name: 'พลาสติก ABS', type: 'Polymer', icon: '🧱' },
+  { id: 'neoprene fabric', name: 'นีโอพรีน', type: 'Polymer', icon: '🤿' },
+  { id: 'bakelite vintage', name: 'เบกาไลต์', type: 'Polymer', icon: '☎️' },
+  { id: 'melamine resin', name: 'เมลามีน', type: 'Polymer', icon: '🍽️' },
+  { id: 'liquid latex', name: 'น้ำยางพารา', type: 'Polymer', icon: '🧤' },
+  { id: 'pvb plastic film', name: 'ฟิล์ม PVB', type: 'Polymer', icon: '🎞️' },
+
+  // === โลหะ (20) ===
+  { id: 'iron ore', name: 'เหล็กดิบ (Iron)', type: 'Metal', icon: '🪨' },
+  { id: 'steel metal', name: 'เหล็กกล้า (Steel)', type: 'Metal', icon: '🔗' },
+  { id: 'aluminum metal', name: 'อะลูมิเนียม', type: 'Metal', icon: '🛸' },
+  { id: 'copper metal', name: 'ทองแดง', type: 'Metal', icon: '🥉' },
+  { id: 'zinc metal', name: 'สังกะสี', type: 'Metal', icon: '🛖' },
+  { id: 'tin metal', name: 'ดีบุก', type: 'Metal', icon: '🥫' },
+  { id: 'gold metal', name: 'ทองคำ', type: 'Metal', icon: '🏆' },
+  { id: 'silver metal', name: 'เงิน', type: 'Metal', icon: '🥈' },
+  { id: 'platinum metal', name: 'แพลตตินัม', type: 'Metal', icon: '💍' },
+  { id: 'titanium metal', name: 'ไทเทเนียม', type: 'Metal', icon: '🦾' },
+  { id: 'nickel metal', name: 'นิกเกิล', type: 'Metal', icon: '🪙' },
+  { id: 'lead metal', name: 'ตะกั่ว', type: 'Metal', icon: '🔋' },
+  { id: 'chromium metal', name: 'โครเมียม', type: 'Metal', icon: '✨' },
+  { id: 'cobalt metal', name: 'โคบอลต์', type: 'Metal', icon: '🧲' },
+  { id: 'magnesium metal', name: 'แมกนีเซียม', type: 'Metal', icon: '🎇' },
+  { id: 'tungsten metal', name: 'ทังสเตน', type: 'Metal', icon: '💡' },
+  { id: 'vanadium metal', name: 'วาเนเดียม', type: 'Metal', icon: '🔧' },
+  { id: 'manganese metal', name: 'แมงกานีส', type: 'Metal', icon: '🪓' },
+  { id: 'bismuth crystal', name: 'บิสมัท', type: 'Metal', icon: '🌈' },
+  { id: 'gallium metal', name: 'แกลเลียม', type: 'Metal', icon: '🌡️' },
+
+  // === เซรามิก (20) ===
+  { id: 'cement powder', name: 'ปูนซีเมนต์', type: 'Ceramic', icon: '🌪️' },
+  { id: 'glass material', name: 'เนื้อแก้ว', type: 'Ceramic', icon: '🪟' },
+  { id: 'carbon black powder', name: 'คาร์บอนดำ', type: 'Ceramic', icon: '⚫' },
+  { id: 'fiberglass', name: 'เส้นใยแก้ว', type: 'Ceramic', icon: '❄️' },
+  { id: 'natural clay', name: 'ดินเหนียว', type: 'Ceramic', icon: '🏺' },
+  { id: 'red brick', name: 'อิฐมอญ', type: 'Ceramic', icon: '🧱' },
+  { id: 'porcelain ceramic', name: 'พอร์ซเลน', type: 'Ceramic', icon: '☕' },
+  { id: 'alumina powder', name: 'อะลูมินา', type: 'Ceramic', icon: '⚪' },
+  { id: 'zirconia ceramic', name: 'เซอร์โคเนีย', type: 'Ceramic', icon: '🦷' },
+  { id: 'silicon carbide', name: 'ซิลิคอนคาร์ไบด์', type: 'Ceramic', icon: '🖤' },
+  { id: 'boron carbide', name: 'โบรอนคาร์ไบด์', type: 'Ceramic', icon: '🛡️' },
+  { id: 'graphite material', name: 'แกรไฟต์', type: 'Ceramic', icon: '✏️' },
+  { id: 'diamond gemstone', name: 'เพชร', type: 'Ceramic', icon: '💎' },
+  { id: 'quartz crystal', name: 'ควอตซ์', type: 'Ceramic', icon: '🔮' },
+  { id: 'silica powder', name: 'ซิลิกา (ผงแก้ว)', type: 'Ceramic', icon: '⏳' },
+  { id: 'sand', name: 'ทราย', type: 'Ceramic', icon: '🏖️' },
+  { id: 'limestone', name: 'หินปูน', type: 'Ceramic', icon: '⛰️' },
+  { id: 'gypsum material', name: 'ยิปซัม', type: 'Ceramic', icon: '🩹' },
+  { id: 'asbestos mineral', name: 'แร่ใยหิน', type: 'Ceramic', icon: '🌫️' },
+  { id: 'gravel stones', name: 'หินกรวด', type: 'Ceramic', icon: '🪨' },
+
+  // === ธรรมชาติ (20) ===
+  { id: 'wood sawdust', name: 'ผงไม้/ขี้เลื่อย', type: 'Natural', icon: '🪵' },
+  { id: 'paper material', name: 'กระดาษ', type: 'Natural', icon: '📄' },
+  { id: 'cotton fabric', name: 'ฝ้าย', type: 'Natural', icon: '☁️' },
+  { id: 'silk fabric', name: 'ไหม', type: 'Natural', icon: '👘' },
+  { id: 'wool material', name: 'ขนสัตว์', type: 'Natural', icon: '🐑' },
+  { id: 'leather material', name: 'หนัง', type: 'Natural', icon: '👞' },
+  { id: 'hemp fiber', name: 'ใยกัญชง', type: 'Natural', icon: '🌿' },
+  { id: 'bamboo wood', name: 'ไผ่', type: 'Natural', icon: '🎋' },
+  { id: 'cork wood', name: 'ไม้ก๊อก', type: 'Natural', icon: '🍾' },
+  { id: 'seashell', name: 'เปลือกหอย', type: 'Natural', icon: '🐚' },
+  { id: 'bone material', name: 'กระดูก', type: 'Natural', icon: '🦴' },
+  { id: 'ivory material', name: 'งาช้าง', type: 'Natural', icon: '🐘' },
+  { id: 'beeswax', name: 'ขี้ผึ้ง', type: 'Natural', icon: '🕯️️' },
+  { id: 'amber gemstone', name: 'อำพัน', type: 'Natural', icon: '🪨' },
+  { id: 'cellulose fiber', name: 'เซลลูโลส', type: 'Natural', icon: '🔬' },
+  { id: 'starch powder', name: 'แป้ง', type: 'Natural', icon: '🥔' },
+  { id: 'lignin powder', name: 'ลิกนิน', type: 'Natural', icon: '🌳' },
+  { id: 'chitin material', name: 'ไคติน', type: 'Natural', icon: '🦐' },
+  { id: 'gelatin powder', name: 'เจลาติน', type: 'Natural', icon: '🍮' },
+  { id: 'coal', name: 'ถ่านหิน', type: 'Natural', icon: '🪨' },
+
+  // === สารเติมแต่ง / อื่นๆ (20) ===
+  { id: 'water liquid', name: 'น้ำ', type: 'Additive', icon: '💧' },
+  { id: 'oil liquid', name: 'น้ำมัน', type: 'Additive', icon: '🛢️' },
+  { id: 'acid liquid', name: 'กรด', type: 'Additive', icon: '🧪' },
+  { id: 'alkaline liquid', name: 'ด่าง/โซดาไฟ', type: 'Additive', icon: '🧼' },
+  { id: 'salt powder', name: 'เกลือ', type: 'Additive', icon: '🧂' },
+  { id: 'sugar powder', name: 'น้ำตาล', type: 'Additive', icon: '🧊' },
+  { id: 'color pigment', name: 'แม่สี', type: 'Additive', icon: '🎨' },
+  { id: 'sulfur powder', name: 'กำมะถัน', type: 'Additive', icon: '💛' },
+  { id: 'phosphorus powder', name: 'ฟอสฟอรัส', type: 'Additive', icon: '🔥' },
+  { id: 'iodine liquid', name: 'ไอโอดีน', type: 'Additive', icon: '🟣' },
+  { id: 'bleach liquid', name: 'สารฟอกขาว', type: 'Additive', icon: '🥼' },
+  { id: 'yeast powder', name: 'ยีสต์', type: 'Additive', icon: '🦠' },
+  { id: 'baking soda', name: 'เบกกิ้งโซดา', type: 'Additive', icon: '🧁' },
+  { id: 'chemical catalyst', name: 'ตัวเร่งปฏิกิริยา', type: 'Additive', icon: '⚡' },
+  { id: 'antioxidant powder', name: 'สารกันบูด', type: 'Additive', icon: '🛡️' },
+  { id: 'uv stabilizer powder', name: 'สารกันยูวี', type: 'Additive', icon: '😎' },
+  { id: 'plasticizer liquid', name: 'สารเสริมสภาพ', type: 'Additive', icon: '💧' },
+  { id: 'foaming agent', name: 'สารเกิดโฟม', type: 'Additive', icon: '🫧' },
+  { id: 'fire retardant powder', name: 'สารหน่วงไฟ', type: 'Additive', icon: '🧯' },
+  { id: 'chemical hardener', name: 'น้ำยาทำให้แข็ง', type: 'Additive', icon: '🧱' }
+];
+
+// สูตรผสม (รองรับ 2-5 อย่าง) คีย์คือ ID ที่เรียงลำดับตัวอักษร
+const recipes = {
+  // --- ผสม 2 ชนิด ---
+  'carbon black powder,iron ore': { engName: 'Carbon Steel metal', name: 'เหล็กกล้าคาร์บอน (Carbon Steel)', desc: 'ผสมคาร์บอนเข้ากับเหล็กดิบ เพิ่มความแข็งแกร่งอย่างมาก เป็นพื้นฐานของโครงสร้างยุคใหม่', uses: 'โครงสร้างตึก, ชิ้นส่วนรถยนต์', tag: 'โลหะ + เซรามิก' },
+  'copper metal,zinc metal': { engName: 'Brass metal object', name: 'ทองเหลือง (Brass)', desc: 'ทองแดงผสมสังกะสี สวยงามคล้ายทองคำ ทนทานต่อการกัดกร่อน ทนน้ำ', uses: 'เครื่องดนตรี, ก๊อกน้ำ, เครื่องประดับ', tag: 'โลหะ + โลหะ' },
+  'copper metal,tin metal': { engName: 'Bronze metal object', name: 'สำริด (Bronze)', desc: 'โลหะผสมยุคโบราณ แข็งกว่าทองแดงบริสุทธิ์ หล่อขึ้นรูปได้ดี', uses: 'ระฆัง, พระพุทธรูป, เฟือง', tag: 'โลหะ + โลหะ' },
+  'natural rubber,sulfur powder': { engName: 'Vulcanized Rubber tire', name: 'ยางวัลคาไนซ์ (Vulcanized Rubber)', desc: 'การนำยางธรรมชาติมาอบกับกำมะถัน ทำให้ยางคงรูป ไม่ละลายเมื่อร้อน และยืดหยุ่นดีขึ้น', uses: 'พื้นรองเท้า, ท่อยาง, ยางยืด', tag: 'พอลิเมอร์ + สารเติมแต่ง' },
+  'epoxy resin,fiberglass': { engName: 'Fiberglass boat hull', name: 'ไฟเบอร์กลาส (Fiberglass)', desc: 'พลาสติกเสริมใยแก้ว น้ำหนักเบา ขึ้นรูปง่าย มีความแข็งแรง', uses: 'หลังคากระบะ, ตัวถังเรือ', tag: 'พอลิเมอร์ + เซรามิก' },
+  'carbon black powder,epoxy resin': { engName: 'Carbon Fiber CFRP', name: 'คาร์บอนไฟเบอร์ (CFRP)', desc: 'เส้นใยคาร์บอนเคลือบเรซิน แข็งแกร่งกว่าเหล็กแต่น้ำหนักเบากว่ามาก', uses: 'จักรยาน, ชิ้นส่วนซุปเปอร์คาร์', tag: 'เซรามิก + พอลิเมอร์' },
+  'epoxy resin,wood sawdust': { engName: 'Wood Plastic Composite flooring', name: 'ไม้พลาสติก (WPC)', desc: 'ผงไม้ผสมพลาสติก ผิวสัมผัสเหมือนไม้แต่ทนน้ำ ไม่ผุพัง', uses: 'ระเบียงบ้าน, พื้นไม้เทียม', tag: 'พอลิเมอร์ + ธรรมชาติ' },
+  'natural clay,water liquid': { engName: 'Wet sculpting clay', name: 'ดินเหนียวปั้นได้', desc: 'ดินเหนียวที่เติมน้ำในสัดส่วนพอเหมาะ ทำให้ขึ้นรูปทรงต่างๆ ได้', uses: 'เครื่องปั้นดินเผาก่อนเผา', tag: 'เซรามิก + สารเติมแต่ง' },
+  'cement powder,sand': { engName: 'Cement mortar', name: 'ปูนทราย (มอร์ตาร์)', desc: 'ปูนซีเมนต์ผสมทรายและน้ำ ใช้สำหรับการก่อและฉาบ', uses: 'ก่ออิฐ, ฉาบผนัง', tag: 'เซรามิก + เซรามิก' },
+  'paper material,beeswax': { engName: 'Wax paper packaging', name: 'กระดาษไข (Wax Paper)', desc: 'กระดาษเคลือบขี้ผึ้ง กันน้ำและกันความชื้น', uses: 'ห่ออาหาร, กระดาษรองอบ', tag: 'ธรรมชาติ + ธรรมชาติ' },
+  'chemical hardener,silicone rubber': { engName: 'Silicone mold for resin', name: 'ซิลิโคนหล่อแบบ', desc: 'ยางซิลิโคนผสมน้ำยาทำให้แข็งตัว ใช้ทำแม่พิมพ์ที่มีความละเอียดสูง', uses: 'แม่พิมพ์สบู่, เรซิน, โมเดล', tag: 'พอลิเมอร์ + สารเติมแต่ง' },
+  'acid liquid,lead metal': { engName: 'Lead acid car battery', name: 'แบตเตอรี่ตะกั่วกรด', desc: 'แผ่นตะกั่วจุ่มในกรดซัลฟิวริก เกิดปฏิกิริยาเคมีกักเก็บไฟฟ้าได้', uses: 'แบตเตอรี่รถยนต์', tag: 'โลหะ + สารเติมแต่ง' },
+
+  // --- ผสม 3 ชนิด ---
+  'carbon black powder,chromium metal,iron ore': { engName: 'Stainless Steel cookware', name: 'สแตนเลส (Stainless Steel)', desc: 'เหล็กกล้าผสมโครเมียม ทำให้เกิดฟิล์มป้องกันสนิม', uses: 'เครื่องครัว, อุปกรณ์การแพทย์', tag: 'โลหะ (3 ชนิด)' },
+  'carbon black powder,natural rubber,sulfur powder': { engName: 'Car tire tread', name: 'ยางรถยนต์เสริมคาร์บอน', desc: 'ยางวัลคาไนซ์ผสมเขม่าคาร์บอน เพิ่มความทนทานต่อการเสียดสี ทนทานต่อถนน', uses: 'ล้อรถยนต์ทั่วไป', tag: 'พอลิเมอร์ + เซรามิก + สารเคมี' },
+  'cement powder,sand,water liquid': { engName: 'Wet concrete mixing', name: 'ปูนมอร์ตาร์เปียก', desc: 'ปูนซีเมนต์ ทราย และน้ำ คลุกเคล้าจนเข้ากัน พร้อมนำไปใช้งานก่อฉาบ', uses: 'ก่อผนังอิฐ, ปรับระดับพื้น', tag: 'เซรามิก + ธรรมชาติ/สาร' },
+  'aluminum metal,epoxy resin,fiberglass': { engName: 'GLARE aviation material fuselage', name: 'แกลร์ (GLARE)', desc: 'สลับชั้นอะลูมิเนียมกับไฟเบอร์กลาส ทนทานต่อการล้าและรอยร้าว', uses: 'ลำตัวเครื่องบินโดยสาร', tag: 'โลหะ + เซรามิก + พอลิเมอร์' },
+  'epoxy resin,glass material,pvb plastic film': { engName: 'Laminated glass windshield', name: 'กระจกลามิเนต (Laminated Glass)', desc: 'กระจก 2 แผ่นประกบฟิล์ม PVB ด้วยเรซิน เมื่อแตกจะไม่ร่วงหล่น', uses: 'กระจกหน้ารถยนต์, หน้าต่างตึกสูง', tag: 'เซรามิก + พอลิเมอร์' },
+  'copper metal,gold metal,silver metal': { engName: 'Rose Gold jewelry ring', name: 'ทองคำ 18K (Pink/Yellow Gold)', desc: 'ทองคำบริสุทธิ์นิ่มเกินไป ต้องผสมเงินและทองแดงเพื่อให้แข็งแรงพอจะทำเครื่องประดับ', uses: 'แหวน, สร้อยคอ', tag: 'อัลลอยด์ (โลหะ 3 ชนิด)' },
+  'fire retardant powder,natural clay,water liquid': { engName: 'Fire Brick furnace', name: 'อิฐทนไฟ (Fire Brick)', desc: 'ดินเหนียวผสมสารหน่วงไฟและน้ำ ทนความร้อนสูงมาก ไม่หลอมละลาย', uses: 'เตาหลอมโลหะ, เตาอบพิซซ่า', tag: 'เซรามิกพิเศษ' },
+  'chemical hardener,color pigment,silicone rubber': { engName: 'Colorful Silicone Mold', name: 'ซิลิโคนแม่พิมพ์สีสัน', desc: 'เพิ่มแม่สีเข้าไปในกระบวนการหล่อแม่พิมพ์ เพื่อจำแนกประเภทความแข็งของซิลิโคน', uses: 'อุตสาหกรรมหล่อพลาสติก', tag: 'พอลิเมอร์ประยุกต์' },
+
+  // --- ผสม 4 ชนิด ---
+  'cement powder,gravel stones,sand,water liquid': { engName: 'Concrete road surface', name: 'คอนกรีต (Concrete)', desc: 'ส่วนผสมของหิน ทราย ปูนซีเมนต์ และน้ำ แข็งตัวกลายเป็นหินเทียมที่รับแรงกดได้มหาศาล', uses: 'พื้นถนน, ฐานราก', tag: 'วัสดุผสม (เซรามิกหลัก)' },
+  'carbon black powder,chromium metal,iron ore,nickel metal': { engName: 'Industrial chemical tank stainless steel', name: 'สแตนเลสเกรดออสเทนนิติก (304/316)', desc: 'เพิ่มนิกเกิลเข้าไปในสแตนเลส ทำให้ทนการกัดกร่อนจากกรดและเกลือได้ดีเยี่ยม', uses: 'แทงก์น้ำสารเคมี, อุปกรณ์เรือ', tag: 'ซุปเปอร์อัลลอยด์' },
+  'epoxy resin,kevlar fabric,nylon fabric,zirconia ceramic': { engName: 'Military bulletproof vest composite', name: 'เกราะกันกระสุนคอมโพสิต', desc: 'แผ่นเซรามิกรับแรงกระแทก ซ้อนด้วยเคฟลาร์เหนียว และไนลอนเคลือบเรซิน', uses: 'เสื้อเกราะทหารระดับสูง', tag: 'Advanced Composite' },
+  'carbon black powder,natural rubber,steel metal,sulfur powder': { engName: 'Steel-belted radial tire section', name: 'ยางเรเดียลเสริมใยเหล็ก', desc: 'ยางรถยนต์ที่มีการฝังลวดเหล็กกล้าเข้าไปด้านใน เพิ่มความต้านทานการระเบิด', uses: 'ยางรถสปอร์ต, รถบรรทุก', tag: 'Polymer + Metal Composite' },
+
+  // --- ผสม 5 ชนิด (Max) ---
+  'cement powder,gravel stones,iron ore,sand,water liquid': { engName: 'Reinforced concrete structure building', name: 'คอนกรีตเสริมเหล็ก (Reinforced Concrete)', desc: 'สุดยอดวัสดุก่อสร้าง! คอนกรีตรับแรงอัด เหล็กรับแรงดึง ประกอบกันเป็นโครงสร้างที่ตึกระฟ้าขาดไม่ได้', uses: 'ตึกระฟ้า, สะพานแขวน, เขื่อน', tag: 'วัสดุผสมระดับโครงสร้าง (Macro-composite)' },
+  'aluminum metal,copper metal,magnesium metal,manganese metal,zinc metal': { engName: 'Aerospace Duralumin satellite part', name: 'ดูราลูมินเกรดอวกาศ (Aerospace Duralumin)', desc: 'โลหะผสมอะลูมิเนียมขั้นสูงที่ควบคุมสัดส่วนธาตุต่างๆ อย่างแม่นยำ เบาแต่ทนทานสุดยอด', uses: 'กระสวยอวกาศ, ดาวเทียม', tag: 'Aerospace Alloy' },
+};
+
+// สูตรแนะนำ (Recommended Recipes)
+const RECOMMENDED_RECIPES = [
+  'carbon black powder,iron ore', // Carbon Steel
+  'copper metal,zinc metal', // Brass
+  'epoxy resin,fiberglass', // Fiberglass
+  'cement powder,gravel stones,sand,water liquid' // Concrete
+];
+
+const MaterialImage = ({ prompt, alt, className, type = 'material' }) => {
+  const [imgSrc, setImgSrc] = useState('');
+  
+  useEffect(() => {
+    // เปลี่ยนมาใช้ API ค้นหาภาพจริงจากอินเทอร์เน็ต (Bing Image Search Thumbnail)
+    // การันตีว่าภาพขึ้น 100% โหลดเร็ว และเป็นภาพของจริงที่ทำให้เข้าใจง่าย
+    const finalPrompt = type === 'material' 
+        ? `${prompt} raw material real photo`
+        : `${prompt} real object product photography`;
+    
+    const safePrompt = encodeURIComponent(finalPrompt);
+    // ดึงภาพ Thumbnail ขนาด 300x300 แบบตัดสี่เหลี่ยมจัตุรัสพอดีจากเว็บ
+    setImgSrc(`https://tse2.mm.bing.net/th?q=${safePrompt}&w=300&h=300&c=7&rs=1&p=0&dpr=1&pid=1.7`);
+  }, [prompt, type]);
+
+  return (
+    <img 
+      src={imgSrc} 
+      alt={alt} 
+      className={`object-cover bg-slate-900 ${className}`}
+      loading="lazy"
+      onError={(e) => {
+        // Fallback placeholder หากภาพไม่มีในเน็ตจริงๆ
+        e.target.onerror = null; 
+        e.target.src = `https://placehold.co/300x300/1e293b/cbd5e1?text=${encodeURIComponent(alt.charAt(0))}`;
+      }}
+    />
+  );
+};
+
+export default function MaterialsDashboard() {
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [mixResult, setMixResult] = useState(null);
+  const [isMixing, setIsMixing] = useState(false);
+  const [notification, setNotification] = useState("");
+  const [discoveredRecipes, setDiscoveredRecipes] = useState(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  const workbenchRef = useRef(null);
+  const resultRef = useRef(null);
+
+  const totalRecipes = Object.keys(recipes).length;
+  const MAX_MIX_ITEMS = 5;
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(""), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const filteredMaterials = useMemo(() => {
+    return baseMaterials.filter(mat => {
+      const matchesSearch = mat.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = activeCategory === "All" || mat.type === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchQuery, activeCategory]);
+
+  const handleSelectItem = (material) => {
+    setMixResult(null); 
+    if (selectedItems.length >= MAX_MIX_ITEMS) {
+      setNotification(`🧪 ช่องผสมเต็มแล้ว! (สูงสุด ${MAX_MIX_ITEMS} ชนิด) กรุณาเอาวัสดุออก หรือกด 'เริ่มสังเคราะห์'`);
+      return;
+    }
+    if (selectedItems.find(item => item.id === material.id)) {
+       setNotification("⚠️ คุณเลือกวัสดุนี้ไปแล้ว ลองหยิบวัสดุอื่นมาผสมกันดูนะ");
+       return;
+    }
+    setSelectedItems([...selectedItems, material]);
+  };
+
+  const handleRemoveItem = (indexToRemove) => {
+    setSelectedItems(selectedItems.filter((_, index) => index !== indexToRemove));
+    setMixResult(null);
+  };
+
+  const handleMix = () => {
+    if (selectedItems.length < 2) {
+      setNotification("ต้องเลือกวัสดุอย่างน้อย 2 ชนิดเพื่อทำการผสม!");
+      return;
+    }
+    setIsMixing(true);
+    setMixResult(null);
+
+    setTimeout(() => {
+      setIsMixing(false);
+      // Sort IDs alphabetically to match the recipe keys
+      const ids = selectedItems.map(item => item.id).sort();
+      const recipeKey = ids.join(',');
+      
+      if (recipes[recipeKey]) {
+        setMixResult({ success: true, ...recipes[recipeKey] });
+        setDiscoveredRecipes(prev => new Set(prev).add(recipeKey));
+      } else {
+        // Fallback for failed mixes
+        let failMessage = 'ปฏิกิริยาไม่เสถียร! วัสดุเหล่านี้ผสมกันไม่ได้เกิดเป็นวัสดุที่ใช้งานได้จริง ลองจับคู่ใหม่ดูนะ';
+        let failEngName = 'pile of toxic chemical sludge, dirty';
+        if (selectedItems.length > 3) {
+            failMessage = 'ส่วนผสมซับซ้อนเกินไปและขัดแย้งกันเอง! กลายเป็นก้อนของแข็งไร้ประโยชน์จากห้องแล็บ';
+            failEngName = 'broken pieces of unidentified grey solid material waste';
         }
-    </script>
-    <style>
-        body { font-family: 'Prompt', sans-serif; background-color: #f8fafc; }
-        h1, h2, h3, .font-display { font-family: 'Mali', cursive; }
-        
-        /* Playful Scrollbar */
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #e2e8f0; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        /* Card Hover Effects */
-        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .card-hover:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-    </style>
-</head>
-<body class="text-slate-800 h-full flex flex-col">
-
-    <header class="bg-white shadow-sm sticky top-0 z-50 border-b-4 border-brand-purple">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <div class="flex items-center space-x-3 group cursor-pointer" onclick="switchTab('overview')">
-                <div class="bg-gradient-to-br from-brand-pink to-brand-purple p-3 rounded-2xl text-white shadow-lg group-hover:animate-wiggle transform transition">
-                    <i class="fa-solid fa-rocket text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-2xl leading-tight bg-clip-text text-transparent bg-gradient-to-r from-brand-purple to-brand-pink">MatEng Pro</h1>
-                    <p class="text-xs text-slate-500 font-medium">ฉบับนักเรียน 🌟</p>
-                </div>
-            </div>
-            
-            <nav class="hidden lg:flex items-center space-x-2 bg-slate-100 p-1 rounded-2xl">
-                <button onclick="switchTab('overview')" id="nav-overview" class="nav-btn px-5 py-2.5 rounded-xl text-sm font-bold bg-white text-brand-purple shadow-sm transition-all"><i class="fa-solid fa-house mr-2"></i> หน้าแรก</button>
-                <button onclick="switchTab('explorer')" id="nav-explorer" class="nav-btn px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all"><i class="fa-solid fa-layer-group mr-2"></i> คลังวัสดุ</button>
-                <button onclick="switchTab('simulator')" id="nav-simulator" class="nav-btn px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all"><i class="fa-solid fa-flask mr-2"></i> ห้องทดลอง</button>
-                <button onclick="switchTab('compare')" id="nav-compare" class="nav-btn px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all"><i class="fa-solid fa-scale-balanced mr-2"></i> เปรียบเทียบ</button>
-                <button onclick="switchTab('quiz')" id="nav-quiz" class="nav-btn px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all text-brand-pink"><i class="fa-solid fa-gamepad mr-2"></i> มินิเกม</button>
-            </nav>
-
-            <div class="flex items-center">
-                <div class="bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full text-sm font-bold flex items-center shadow-sm border border-yellow-200">
-                    <i class="fa-solid fa-star text-yellow-500 mr-2 animate-pulse"></i> Level 1
-                </div>
-            </div>
-        </div>
-        
-        <!-- Mobile Nav -->
-        <div class="lg:hidden flex overflow-x-auto p-3 bg-slate-50 gap-2 border-t border-slate-200">
-            <button onclick="switchTab('overview')" id="mob-nav-overview" class="mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-brand-purple text-white whitespace-nowrap shadow-md"><i class="fa-solid fa-house mr-1"></i> หน้าแรก</button>
-            <button onclick="switchTab('explorer')" id="mob-nav-explorer" class="mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-600 border border-slate-200 whitespace-nowrap shadow-sm"><i class="fa-solid fa-layer-group mr-1"></i> คลังวัสดุ</button>
-            <button onclick="switchTab('simulator')" id="mob-nav-simulator" class="mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-600 border border-slate-200 whitespace-nowrap shadow-sm"><i class="fa-solid fa-flask mr-1"></i> ห้องทดลอง</button>
-            <button onclick="switchTab('quiz')" id="mob-nav-quiz" class="mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-brand-pink border border-slate-200 whitespace-nowrap shadow-sm"><i class="fa-solid fa-gamepad mr-1"></i> เกม</button>
-        </div>
-    </header>
-
-    <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-
-        <section id="tab-overview" class="space-y-8 animate-in fade-in duration-500">
-            <!-- Hero Banner -->
-            <div class="bg-gradient-to-r from-brand-purple via-[#560bad] to-brand-blue rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border-4 border-white/20">
-                <div class="absolute -right-10 -top-10 opacity-20 pointer-events-none animate-spin" style="animation-duration: 20s;">
-                    <i class="fa-solid fa-atom text-[200px]"></i>
-                </div>
-                
-                <div class="max-w-2xl relative z-10">
-                    <div class="inline-block bg-white/20 backdrop-blur-md text-white text-sm font-bold px-4 py-1.5 rounded-full mb-4 border border-white/30 shadow-sm">
-                        👋 ยินดีต้อนรับนักวิศวกรน้อย!
-                    </div>
-                    <h2 class="text-3xl sm:text-5xl font-bold mt-2 mb-4 leading-tight font-display text-transparent bg-clip-text bg-gradient-to-r from-white to-brand-green">
-                        สำรวจโลกของ <br/>วัสดุวิศวกรรม 4 เผ่าพันธุ์
-                    </h2>
-                    <p class="text-blue-100 text-base sm:text-lg mb-8 font-medium">
-                        สิ่งของทุกอย่างรอบตัวเราสร้างมาจากอะไร? มาทำความรู้จักกับ โลหะ, เซรามิก, พอลิเมอร์ และวัสดุผสม พร้อมเจาะลึกพลังแฝงของพวกเขากันเถอะ!
-                    </p>
-                    <div class="flex flex-wrap gap-4">
-                        <button onclick="switchTab('explorer')" class="bg-brand-yellow hover:bg-yellow-400 text-slate-900 font-bold px-8 py-3.5 rounded-2xl shadow-xl transform transition hover:scale-105 hover:-translate-y-1 flex items-center space-x-2 text-lg">
-                            <span>เริ่มการผจญภัย</span>
-                            <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                        <button onclick="switchTab('quiz')" class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border-2 border-white/30 font-bold px-8 py-3.5 rounded-2xl shadow-lg transform transition hover:scale-105 flex items-center space-x-2 text-lg">
-                            <i class="fa-solid fa-gamepad"></i>
-                            <span>เล่นมินิเกม</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Fun 3D-like illustration replacement using icons -->
-                <div class="relative z-10 hidden md:block w-64 h-64">
-                    <div class="absolute top-0 right-0 bg-blue-500 p-6 rounded-3xl shadow-2xl transform rotate-12 animate-float" style="animation-delay: 0s;">
-                        <i class="fa-solid fa-gears text-5xl text-white"></i>
-                    </div>
-                    <div class="absolute bottom-10 left-0 bg-emerald-500 p-6 rounded-3xl shadow-2xl transform -rotate-12 animate-float" style="animation-delay: 1s;">
-                        <i class="fa-solid fa-bottle-water text-5xl text-white"></i>
-                    </div>
-                    <div class="absolute top-20 left-10 bg-amber-500 p-5 rounded-3xl shadow-2xl transform rotate-6 animate-float" style="animation-delay: 0.5s;">
-                        <i class="fa-solid fa-fire text-4xl text-white"></i>
-                    </div>
-                    <div class="absolute bottom-0 right-10 bg-brand-pink p-5 rounded-3xl shadow-2xl transform -rotate-6 animate-float" style="animation-delay: 1.5s;">
-                        <i class="fa-solid fa-layer-group text-4xl text-white"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4 Tribes (Categories) -->
-            <div>
-                <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center font-display"><i class="fa-solid fa-map-location-dot text-brand-purple mr-3"></i> 4 กลุ่มวัสดุหลัก (The 4 Tribes)</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- Metal -->
-                    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-blue-100 card-hover cursor-pointer relative overflow-hidden" onclick="switchTab('explorer'); setTimeout(()=>filterCategory('metal'),100);">
-                        <div class="absolute -right-6 -bottom-6 opacity-5"><i class="fa-solid fa-gears text-9xl"></i></div>
-                        <div class="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg mb-4">
-                            <i class="fa-solid fa-gears"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-slate-900 font-display">โลหะ (Metals)</h4>
-                        <p class="text-sm text-slate-500 mt-2 font-medium">แข็งแรง นำไฟฟ้าและนำความร้อนได้ดีเยี่ยม ดัดโค้งได้!</p>
-                        <div class="mt-4 inline-block bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-lg">ตัวอย่าง: เหล็ก, ทองแดง, อลูมิเนียม</div>
-                    </div>
-                    <!-- Ceramic -->
-                    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-amber-100 card-hover cursor-pointer relative overflow-hidden" onclick="switchTab('explorer'); setTimeout(()=>filterCategory('ceramic'),100);">
-                        <div class="absolute -right-6 -bottom-6 opacity-5"><i class="fa-solid fa-fire text-9xl"></i></div>
-                        <div class="w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg mb-4">
-                            <i class="fa-solid fa-fire"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-slate-900 font-display">เซรามิก (Ceramics)</h4>
-                        <p class="text-sm text-slate-500 mt-2 font-medium">ทนความร้อนสูงปรี๊ด แข็งมากแต่เปราะ (ตกแตก!) เป็นฉนวนไฟฟ้า</p>
-                        <div class="mt-4 inline-block bg-amber-50 text-amber-700 text-xs font-bold px-3 py-1 rounded-lg">ตัวอย่าง: แก้ว, กระเบื้อง, อิฐ</div>
-                    </div>
-                    <!-- Polymer -->
-                    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-emerald-100 card-hover cursor-pointer relative overflow-hidden" onclick="switchTab('explorer'); setTimeout(()=>filterCategory('polymer'),100);">
-                        <div class="absolute -right-6 -bottom-6 opacity-5"><i class="fa-solid fa-dna text-9xl"></i></div>
-                        <div class="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg mb-4">
-                            <i class="fa-solid fa-bottle-water"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-slate-900 font-display">พอลิเมอร์ (Polymers)</h4>
-                        <p class="text-sm text-slate-500 mt-2 font-medium">น้ำหนักเบาหวิว ยืดหยุ่นได้ดี ขึ้นรูปง่าย (พลาสติกและยาง)</p>
-                        <div class="mt-4 inline-block bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-lg">ตัวอย่าง: ขวด PET, ยางรถยนต์</div>
-                    </div>
-                    <!-- Composite -->
-                    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-brand-pink/20 card-hover cursor-pointer relative overflow-hidden" onclick="switchTab('explorer'); setTimeout(()=>filterCategory('composite'),100);">
-                        <div class="absolute -right-6 -bottom-6 opacity-5"><i class="fa-solid fa-layer-group text-9xl"></i></div>
-                        <div class="w-14 h-14 bg-gradient-to-br from-brand-pink to-purple-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg mb-4">
-                            <i class="fa-solid fa-layer-group"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-slate-900 font-display">วัสดุผสม (Composites)</h4>
-                        <p class="text-sm text-slate-500 mt-2 font-medium">การรวมพลังของวัสดุ 2 ชนิดขึ้นไป เพื่อให้ได้สุดยอดคุณสมบัติ!</p>
-                        <div class="mt-4 inline-block bg-pink-50 text-brand-pink text-xs font-bold px-3 py-1 rounded-lg">ตัวอย่าง: คาร์บอนไฟเบอร์, ไฟเบอร์กลาส</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fun Facts -->
-            <div class="bg-brand-yellow/10 border-2 border-brand-yellow/30 rounded-3xl p-6 relative">
-                <div class="absolute -top-5 left-6 bg-brand-yellow text-slate-900 font-bold px-4 py-2 rounded-2xl shadow-md transform -rotate-3 font-display">
-                    💡 รู้หรือไม่? (Did you know?)
-                </div>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="flex items-start space-x-3 bg-white p-4 rounded-2xl shadow-sm">
-                        <div class="text-2xl">📱</div>
-                        <p class="text-sm text-slate-700 font-medium">หน้าจอมือถือที่เราใช้ทำจาก <strong>เซรามิก (กระจก)</strong> แบบพิเศษที่ทนรอยขีดข่วนได้ดีเยี่ยม!</p>
-                    </div>
-                    <div class="flex items-start space-x-3 bg-white p-4 rounded-2xl shadow-sm">
-                        <div class="text-2xl">🏎️</div>
-                        <p class="text-sm text-slate-700 font-medium">รถแข่ง F1 ใช้วัสดุ <strong>คาร์บอนไฟเบอร์ (วัสดุผสม)</strong> เพราะเบากว่าเหล็กแต่แข็งแรงกว่าถึง 5 เท่า!</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="tab-explorer" class="space-y-6 hidden animate-in slide-in-from-right-4 duration-300">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-100">
-                <div class="text-center md:text-left">
-                    <h2 class="text-2xl font-bold text-slate-900 font-display text-brand-purple"><i class="fa-solid fa-box-open mr-2"></i> สมุดสะสมการ์ดวัสดุ</h2>
-                    <p class="text-sm text-slate-500 mt-1 font-medium">คลิกเลือกหมวดหมู่เพื่อดูสเตตัส (Status) ของวัสดุแต่ละชนิด</p>
-                </div>
-                <div class="flex flex-wrap justify-center gap-2 bg-slate-50 p-2 rounded-2xl">
-                    <button onclick="filterCategory('all')" id="cat-btn-all" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-brand-purple text-white shadow-md transition-all">ทุกธาตุ</button>
-                    <button onclick="filterCategory('metal')" id="cat-btn-metal" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-500 hover:bg-blue-50 transition-all border border-transparent hover:border-blue-200">โลหะ</button>
-                    <button onclick="filterCategory('ceramic')" id="cat-btn-ceramic" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-500 hover:bg-amber-50 transition-all border border-transparent hover:border-amber-200">เซรามิก</button>
-                    <button onclick="filterCategory('polymer')" id="cat-btn-polymer" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-500 hover:bg-emerald-50 transition-all border border-transparent hover:border-emerald-200">พอลิเมอร์</button>
-                    <button onclick="filterCategory('composite')" id="cat-btn-composite" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-500 hover:bg-pink-50 transition-all border border-transparent hover:border-pink-200">วัสดุผสม</button>
-                </div>
-            </div>
-
-            <!-- Material Grid Cards (Populated by JS) -->
-            <div id="material-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Cards inject here -->
-            </div>
-        </section>
-
-        <section id="tab-compare" class="space-y-6 hidden animate-in slide-in-from-right-4 duration-300">
-            
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-100">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-bold text-slate-900 text-lg font-display"><i class="fa-solid fa-dumbbell text-blue-500 mr-2"></i> ใครแข็งแกร่งที่สุด? (ความต้านแรงดึง)</h3>
-                    </div>
-                    <p class="text-xs text-slate-500 mb-4 font-medium">ค่าสูง = รับน้ำหนัก/แรงดึงได้มากก่อนจะขาด (หน่วย: MPa)</p>
-                    <div class="relative h-64">
-                        <canvas id="strengthChart"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-100">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-bold text-slate-900 text-lg font-display"><i class="fa-solid fa-feather text-emerald-500 mr-2"></i> ใครเบาที่สุด? (ความหนาแน่น)</h3>
-                    </div>
-                    <p class="text-xs text-slate-500 mb-4 font-medium">ค่าต่ำ = น้ำหนักเบา เหมาะกับทำเครื่องบิน/รถแข่ง (หน่วย: g/cm³)</p>
-                    <div class="relative h-64">
-                        <canvas id="densityChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-100">
-                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                    <h2 class="text-xl font-bold text-slate-900 font-display"><i class="fa-solid fa-table text-brand-purple mr-2"></i> ตารางสเตตัสฉบับเต็ม</h2>
-                    <div class="relative w-full sm:w-64">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-search"></i></span>
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="ค้นหาชื่อวัสดุ..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-purple font-medium transition-colors">
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto rounded-2xl border border-slate-200">
-                    <table class="w-full text-left border-collapse text-sm whitespace-nowrap">
-                        <thead>
-                            <tr class="bg-slate-800 text-white font-bold text-xs uppercase tracking-wider">
-                                <th class="p-4 rounded-tl-xl">การ์ดวัสดุ</th>
-                                <th class="p-4">เผ่าพันธุ์</th>
-                                <th class="p-4"><i class="fa-solid fa-feather mr-1 text-slate-300"></i> ความหนาแน่น</th>
-                                <th class="p-4"><i class="fa-solid fa-dumbbell mr-1 text-slate-300"></i> ความแข็งแรง</th>
-                                <th class="p-4"><i class="fa-solid fa-fire mr-1 text-slate-300"></i> ทนความร้อน</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody" class="divide-y divide-slate-200 bg-white font-medium">
-                            <!-- Populated via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <section id="tab-simulator" class="space-y-6 hidden animate-in slide-in-from-right-4 duration-300">
-            <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-slate-100">
-                <div class="text-center mb-8 max-w-2xl mx-auto">
-                    <div class="inline-block bg-brand-blue/10 text-brand-blue font-bold px-4 py-2 rounded-full mb-3 text-sm border border-brand-blue/20">
-                        <i class="fa-solid fa-flask mr-2"></i> ห้องทดลองเสมือนจริง
-                    </div>
-                    <h2 class="text-3xl font-bold text-slate-900 font-display mb-3">จำลองการดึงวัสดุจนขาด!</h2>
-                    <p class="text-slate-600 font-medium text-sm">ทดลองเลือกวัสดุแต่ละประเภท แล้วดูว่ากราฟ "ความเค้น-ความเครียด (Stress-Strain Curve)" บอกลักษณะนิสัยของวัสดุอย่างไร</p>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    <!-- Controls -->
-                    <div class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-200 lg:col-span-1 space-y-4">
-                        <h3 class="font-bold text-slate-800 font-display text-lg mb-4 text-center">เลือกตัวอย่างทดสอบ</h3>
-                        
-                        <label class="flex items-center p-3 bg-white border-2 border-blue-200 rounded-2xl cursor-pointer hover:bg-blue-50 transition-all shadow-sm group">
-                            <input type="radio" name="simMaterial" value="metal" checked onchange="updateSimulator()" class="w-5 h-5 text-blue-600 focus:ring-blue-500">
-                            <div class="ml-3">
-                                <span class="block font-bold text-slate-800 group-hover:text-blue-700">โลหะ (เหล็ก)</span>
-                                <span class="text-[10px] text-slate-500 font-medium">เหนียว ยืดได้ก่อนขาด</span>
-                            </div>
-                        </label>
-                        
-                        <label class="flex items-center p-3 bg-white border-2 border-amber-200 rounded-2xl cursor-pointer hover:bg-amber-50 transition-all shadow-sm group">
-                            <input type="radio" name="simMaterial" value="ceramic" onchange="updateSimulator()" class="w-5 h-5 text-amber-500 focus:ring-amber-500">
-                            <div class="ml-3">
-                                <span class="block font-bold text-slate-800 group-hover:text-amber-700">เซรามิก (แก้ว)</span>
-                                <span class="text-[10px] text-slate-500 font-medium">แข็งแต่เปราะ ขาดทันที</span>
-                            </div>
-                        </label>
-                        
-                        <label class="flex items-center p-3 bg-white border-2 border-emerald-200 rounded-2xl cursor-pointer hover:bg-emerald-50 transition-all shadow-sm group">
-                            <input type="radio" name="simMaterial" value="polymer" onchange="updateSimulator()" class="w-5 h-5 text-emerald-500 focus:ring-emerald-500">
-                            <div class="ml-3">
-                                <span class="block font-bold text-slate-800 group-hover:text-emerald-700">พอลิเมอร์ (ยาง/พลาสติก)</span>
-                                <span class="text-[10px] text-slate-500 font-medium">ยืดยาวววววววว</span>
-                            </div>
-                        </label>
-                        
-                        <label class="flex items-center p-3 bg-white border-2 border-pink-200 rounded-2xl cursor-pointer hover:bg-pink-50 transition-all shadow-sm group">
-                            <input type="radio" name="simMaterial" value="composite" onchange="updateSimulator()" class="w-5 h-5 text-pink-500 focus:ring-pink-500">
-                            <div class="ml-3">
-                                <span class="block font-bold text-slate-800 group-hover:text-pink-700">วัสดุผสม (คาร์บอน)</span>
-                                <span class="text-[10px] text-slate-500 font-medium">แข็งแรงปรี๊ด ดึงไม่ค่อยยืด</span>
-                            </div>
-                        </label>
-                    </div>
-
-                    <!-- Chart & Animation -->
-                    <div class="lg:col-span-3 space-y-6">
-                        <!-- Visual Feedback Bar -->
-                        <div class="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-inner flex flex-col items-center justify-center min-h-[160px]">
-                            <h4 class="absolute top-4 left-6 font-bold text-sm text-slate-400 font-display">สิ่งที่เกิดขึ้นกับวัสดุ:</h4>
-                            
-                            <!-- The material block that stretches -->
-                            <div class="w-full max-w-md mt-6 relative flex items-center justify-center">
-                                <!-- Left Clamp -->
-                                <div class="w-8 h-16 bg-slate-700 rounded-l-lg z-10 border-r-4 border-slate-600 flex items-center justify-center text-xs font-bold shadow-lg">ยึด</div>
-                                <!-- Material Body -->
-                                <div id="sim-material-body" class="h-8 bg-blue-500 w-32 transition-all duration-1000 ease-in-out relative flex items-center justify-center overflow-hidden">
-                                    <div class="absolute inset-0 bg-white/20" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);"></div>
-                                </div>
-                                <!-- Right Clamp -->
-                                <div class="w-8 h-16 bg-slate-700 rounded-r-lg z-10 border-l-4 border-slate-600 flex items-center justify-center text-xs font-bold shadow-lg">ดึง <i class="fa-solid fa-arrow-right ml-1"></i></div>
-                            </div>
-                            
-                            <!-- Result text -->
-                            <div id="sim-result-text" class="mt-6 text-center font-bold text-xl text-blue-400 animate-pulse font-display">
-                                โลหะจะยืดออกเล็กน้อยแล้วค่อยๆ ขาด (มีคอคอด)
-                            </div>
-                            
-                            <button onclick="playSimulation()" class="absolute top-4 right-6 bg-brand-yellow text-slate-900 font-bold px-4 py-2 rounded-xl text-sm hover:scale-105 transition shadow-lg flex items-center">
-                                <i class="fa-solid fa-play mr-2"></i> กดเพื่อดึง!
-                            </button>
-                        </div>
-
-                        <!-- Graph -->
-                        <div class="bg-white p-4 rounded-3xl border-2 border-slate-100 h-[300px] relative">
-                            <canvas id="stressStrainChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="tab-quiz" class="space-y-6 hidden animate-in zoom-in-95 duration-300">
-            <div class="max-w-3xl mx-auto bg-white p-8 sm:p-12 rounded-[2rem] shadow-xl border-4 border-brand-purple text-center relative overflow-hidden">
-                <!-- Background decoration -->
-                <div class="absolute -top-10 -left-10 text-brand-purple/5 rotate-12"><i class="fa-solid fa-gamepad text-[200px]"></i></div>
-                
-                <div id="quiz-intro" class="relative z-10">
-                    <h2 class="text-4xl font-bold text-slate-900 font-display mb-4">ประลองความรู้! 🎮</h2>
-                    <p class="text-slate-600 font-medium mb-8 text-lg">มาทดสอบกันหน่อยว่า น้องๆ เข้าใจเรื่องวัสดุวิศวกรรมมากแค่ไหน (มี 5 ข้อ)</p>
-                    <button onclick="startQuiz()" class="bg-brand-pink hover:bg-pink-600 text-white font-bold text-xl px-10 py-4 rounded-full shadow-lg transform transition hover:scale-110 animate-bounce">
-                        เริ่มลุยเลย!
-                    </button>
-                </div>
-
-                <div id="quiz-active" class="hidden relative z-10 text-left">
-                    <div class="flex justify-between items-center mb-6">
-                        <span class="bg-slate-100 text-slate-600 font-bold px-4 py-1.5 rounded-full text-sm" id="quiz-progress">ข้อ 1 / 5</span>
-                        <span class="bg-brand-yellow text-slate-900 font-bold px-4 py-1.5 rounded-full text-sm"><i class="fa-solid fa-star"></i> คะแนน: <span id="quiz-score">0</span></span>
-                    </div>
-                    
-                    <h3 id="quiz-question" class="text-2xl font-bold text-slate-800 font-display mb-6 leading-relaxed">คำถามจะแสดงที่นี่?</h3>
-                    
-                    <div id="quiz-options" class="grid grid-cols-1 gap-3">
-                        <!-- Options injected via JS -->
-                    </div>
-                </div>
-
-                <div id="quiz-result" class="hidden relative z-10">
-                    <div class="text-6xl mb-4" id="quiz-emoji">🏆</div>
-                    <h2 class="text-3xl font-bold text-slate-900 font-display mb-2">จบการทดสอบ!</h2>
-                    <p class="text-xl text-slate-600 font-medium mb-6">น้องทำคะแนนได้: <strong class="text-brand-purple text-3xl" id="quiz-final-score">0/5</strong></p>
-                    <p id="quiz-feedback" class="text-lg font-bold text-brand-pink mb-8">เยี่ยมมาก!</p>
-                    <button onclick="resetQuiz()" class="bg-brand-purple hover:bg-purple-700 text-white font-bold px-8 py-3 rounded-full shadow-lg transition">
-                        <i class="fa-solid fa-rotate-right mr-2"></i> เล่นอีกครั้ง
-                    </button>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <div id="materialModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] items-center justify-center p-4 hidden flex">
-        <div class="bg-white rounded-[2rem] max-w-lg w-full p-6 sm:p-8 shadow-2xl relative transform transition-all scale-95 opacity-0 duration-300" id="modal-card">
-            <button onclick="closeModal()" class="absolute top-5 right-5 w-10 h-10 bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 rounded-full flex items-center justify-center transition">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-            <div id="modalContent">
-                <!-- Dynamically filled by JS -->
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Game/Quiz State
-        let currentQuestion = 0;
-        let score = 0;
-        const quizData = [
-            {
-                q: "วัสดุชนิดใดที่ 'แข็งมากแต่ตกแล้วแตก' (เปราะ) และมักใช้ทำจานชามหรือฉนวนความร้อน?",
-                options: ["โลหะ", "เซรามิก", "พอลิเมอร์", "วัสดุผสม"],
-                answer: 1 // Index of correct option (เซรามิก)
-            },
-            {
-                q: "ยางรถยนต์ หรือ ขวดน้ำพลาสติก จัดอยู่ในกลุ่มวัสดุใด?",
-                options: ["โลหะ", "พอลิเมอร์", "เซรามิก", "คาร์บอนไฟเบอร์"],
-                answer: 1 // พอลิเมอร์
-            },
-            {
-                q: "ถ้าต้องการสร้าง 'เครื่องบิน' ที่ต้อง แข็งแรงมากและน้ำหนักเบา ควรเลือกใช้วัสดุใดดีที่สุด?",
-                options: ["เหล็กกล้า", "กระเบื้องเซรามิก", "คาร์บอนไฟเบอร์คอมโพสิต", "พลาสติกใส"],
-                answer: 2 // คาร์บอนไฟเบอร์
-            },
-            {
-                q: "จุดเด่นที่สำคัญที่สุดของ 'โลหะ' เช่น ทองแดงและอลูมิเนียม คืออะไร?",
-                options: ["นำไฟฟ้าและนำความร้อนได้ดี", "น้ำหนักเบาที่สุด", "โปร่งใสแสงผ่านได้", "ยืดหยุ่นเหมือนหนังยาง"],
-                answer: 0 // นำไฟฟ้า
-            },
-            {
-                q: "วัสดุในข้อใดทนความร้อนได้สูงที่สุด (มักใช้ในเตาเผาอุตสาหกรรม)?",
-                options: ["พลาสติก PVC", "ซิลิคอนคาร์ไบด์ (เซรามิก)", "อลูมิเนียม", "ไม้"],
-                answer: 1 // ซิลิคอนคาร์ไบด์
-            }
-        ];
-
-        // Chart Instances
-        let strengthChartInstance = null;
-        let densityChartInstance = null;
-        let stressStrainChartInstance = null;
-
-        // Expanded Data with 'Stats' for Trading Cards (Max values for 100% bar width)
-        const MAX_STRENGTH = 1600;
-        const MAX_DENSITY = 8.0;
-        const MAX_TEMP = 1700;
-
-        const materialsData = [
-            {
-                id: 1, name: "เหล็กกล้าคาร์บอน", category: "metal", catName: "โลหะ",
-                density: 7.85, strength: 450, modulus: 207, temp: 500,
-                color: "blue", icon: "fa-gears", bg: "bg-blue-500",
-                desc: "ลูกพี่ใหญ่แห่งวงการก่อสร้าง! หนัก แข็งแรง และราคาถูก แต่ระวังสนิมนะ",
-                apps: ["ตึกสูง", "สะพาน", "ชิ้นส่วนรถยนต์"]
-            },
-            {
-                id: 2, name: "อลูมิเนียมอัลลอยด์", category: "metal", catName: "โลหะ",
-                density: 2.70, strength: 310, modulus: 69, temp: 300,
-                color: "blue", icon: "fa-plane", bg: "bg-cyan-500",
-                desc: "ฮีโร่น้ำหนักเบา! ไม่กลัวสนิม นิยมใช้ทำเครื่องบินและกระป๋องน้ำอัดลม",
-                apps: ["เครื่องบิน", "กรอบหน้าต่าง", "สมาร์ทโฟน"]
-            },
-            {
-                id: 3, name: "ไทเทเนียม", category: "metal", catName: "โลหะ",
-                density: 4.43, strength: 950, modulus: 114, temp: 600,
-                color: "blue", icon: "fa-shield-halved", bg: "bg-indigo-500",
-                desc: "สุดยอดโลหะระดับพรีเมียม แข็งแกร่งดั่งเหล็กแต่เบากว่าเกือบครึ่ง! แถมร่างกายมนุษย์ไม่ต่อต้าน",
-                apps: ["กระดูกเทียม", "ยานอวกาศ", "ไม้กอล์ฟ"]
-            },
-            {
-                id: 4, name: "อะลูมินา (Al₂O₃)", category: "ceramic", catName: "เซรามิก",
-                density: 3.95, strength: 300, modulus: 370, temp: 1600,
-                color: "amber", icon: "fa-fire", bg: "bg-amber-500",
-                desc: "นักรบทนความร้อน! แข็งมาก ทนไฟสุดๆ แต่ถ้าตกกระแทกแรงๆ ก็แตกได้",
-                apps: ["หัวเทียนรถ", "เกราะกันกระสุน", "กระเบื้องทนไฟ"]
-            },
-            {
-                id: 5, name: "ซิลิคอนคาร์ไบด์", category: "ceramic", catName: "เซรามิก",
-                density: 3.21, strength: 400, modulus: 410, temp: 1650,
-                color: "amber", icon: "fa-bolt", bg: "bg-orange-600",
-                desc: "แรร์ไอเทม! แข็งรองจากเพชร ทนทานการขัดสีสุดๆ ใช้เบรกซูเปอร์คาร์",
-                apps: ["เบรกรถสปอร์ต", "ชิ้นส่วนเตาเผา", "กระดาษทราย"]
-            },
-            {
-                id: 6, name: "พอลิเอทิลีน (HDPE)", category: "polymer", catName: "พอลิเมอร์",
-                density: 0.95, strength: 30, modulus: 1.2, temp: 80,
-                color: "emerald", icon: "fa-bottle-water", bg: "bg-emerald-500",
-                desc: "จอมยืดหยุ่น น้ำหนักเบาจนลอยน้ำได้! พบได้ทั่วไปในขวดแชมพูและถังน้ำ",
-                apps: ["ถังเก็บน้ำ", "ขวดแชมพู", "ของเล่นเด็ก"]
-            },
-            {
-                id: 7, name: "โพลีคาร์บอเนต (PC)", category: "polymer", catName: "พอลิเมอร์",
-                density: 1.20, strength: 65, modulus: 2.4, temp: 125,
-                color: "emerald", icon: "fa-glasses", bg: "bg-teal-500",
-                desc: "พลาสติกพลังช้างสาร! ใสปิ๊งแต่มือทุบไม่แตก ใช้ทำกระจกกันกระสุน",
-                apps: ["แว่นตา", "ไฟหน้ารถ", "โล่ตำรวจ"]
-            },
-            {
-                id: 8, name: "คาร์บอนไฟเบอร์", category: "composite", catName: "วัสดุผสม",
-                density: 1.55, strength: 1600, modulus: 135, temp: 200,
-                color: "pink", icon: "fa-layer-group", bg: "bg-pink-600",
-                desc: "ราชาแห่งความเบาและแกร่ง! เกิดจากการทอเส้นใยคาร์บอนเข้ากับเรซิน แกร่งกว่าเหล็กแต่เบาหวิว",
-                apps: ["รถ F1", "จักรยานแข่ง", "โดรน"]
-            },
-            {
-                id: 9, name: "ไฟเบอร์กลาส", category: "composite", catName: "วัสดุผสม",
-                density: 1.85, strength: 800, modulus: 35, temp: 150,
-                color: "pink", icon: "fa-ship", bg: "bg-purple-500",
-                desc: "ฝาแฝดผู้น้องของคาร์บอนไฟเบอร์ ราคาถูกกว่า ใช้ใยแก้วเสริมแรง ไม่กลัวน้ำและแดด",
-                apps: ["เรือ", "สไลเดอร์สวนน้ำ", "หลังคารถกระบะ"]
-            }
-        ];
-
-        document.addEventListener("DOMContentLoaded", () => {
-            renderMaterials(materialsData);
-            renderTable(materialsData);
-            initCharts();
-            initSimulatorChart();
+        setMixResult({ 
+          success: false, 
+          name: 'ตะกอนสารเคมี (ล้มเหลว)', 
+          engName: failEngName,
+          desc: failMessage
         });
+      }
 
-        function switchTab(tabId) {
-            const tabs = ['overview', 'explorer', 'compare', 'simulator', 'quiz'];
+      // เลื่อนหน้าจอลงมาดูผลลัพธ์ (รองรับมือถือ)
+      setTimeout(() => {
+         resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+
+    }, 2500); // 2.5 second animation
+  };
+
+  const handleReset = () => {
+    setSelectedItems([]);
+    setMixResult(null);
+    setNotification("");
+  };
+
+  const handleAutoFill = (recipeKey) => {
+    const materialIds = recipeKey.split(',');
+    const itemsToSelect = materialIds.map(id => baseMaterials.find(m => m.id === id)).filter(Boolean);
+    setSelectedItems(itemsToSelect);
+    setMixResult(null);
+    setNotification("✅ จัดเตรียมวัตถุดิบสำหรับสูตรแนะนำเรียบร้อยแล้ว กด 'เริ่มสังเคราะห์' ได้เลย!");
+    
+    // เลื่อนหน้าจอขึ้นไปที่โต๊ะทดลองสำหรับมือถือ/iPad
+    setTimeout(() => {
+       workbenchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const getCategoryStyles = (type) => {
+      const cat = Object.values(CATEGORIES).find(c => c.id === type);
+      return cat || { color: 'from-gray-500 to-gray-600', text: 'text-gray-400', border: 'border-gray-500' };
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 font-sans pb-12 overflow-x-hidden text-gray-100 selection:bg-cyan-500 selection:text-white">
+      {/* Header */}
+      <header className="bg-slate-900 border-b border-slate-800 shadow-2xl relative overflow-hidden sticky top-0 z-50">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-indigo-500 to-fuchsia-500"></div>
+        <div className="max-w-7xl mx-auto p-3 md:p-6 flex flex-col md:flex-row items-center justify-between relative z-10 gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl md:text-3xl shadow-[0_0_15px_rgba(34,212,238,0.2)]">
+                🔬
+            </div>
+            <div>
+              <h1 className="text-xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400 tracking-tight">
+                Real Materials Lab
+              </h1>
+              <p className="text-slate-400 text-xs md:text-sm">ศูนย์วิจัยและสังเคราะห์วัสดุขั้นสูง (ภาพเสมือนจริง)</p>
+            </div>
+          </div>
+          
+          <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-2 md:p-3 border border-slate-700 shadow-inner flex flex-row md:flex-col items-center justify-between md:justify-center min-w-[200px] md:min-w-[220px] w-full md:w-auto">
+            <span className="text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-0 md:mb-1">สูตรลับที่ค้นพบ</span>
+            <div className="flex items-baseline gap-1 md:gap-2">
+              <span className="text-xl md:text-2xl font-black text-cyan-400">{discoveredRecipes.size}</span>
+              <span className="text-xs md:text-sm text-slate-500 font-bold">/ {totalRecipes}</span>
+            </div>
+            <div className="w-full bg-slate-900 rounded-full h-1.5 md:mt-2 overflow-hidden hidden md:block">
+              <div 
+                className="bg-gradient-to-r from-cyan-400 to-fuchsia-500 h-full rounded-full transition-all duration-700" 
+                style={{ width: `${(discoveredRecipes.size / totalRecipes) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto mt-4 md:mt-6 px-3 md:px-4 flex flex-col gap-4 md:gap-6">
+        
+        {/* Inventory Section (Top) */}
+        <section className="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden flex flex-col max-h-[400px] md:max-h-[450px]">
+          {/* Inventory Header & Controls */}
+          <div className="p-3 md:p-4 bg-slate-800/50 border-b border-slate-700/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 md:gap-4">
+            <h2 className="font-bold text-base md:text-lg text-slate-200 flex items-center gap-2 shrink-0">
+               <span className="text-lg md:text-xl">📦</span> คลังวัตถุดิบ <span className="text-slate-500 font-normal text-xs md:text-sm">({baseMaterials.length} ชนิด)</span>
+            </h2>
             
-            // Update UI Active states
-            tabs.forEach(t => {
-                document.getElementById(`tab-${t}`).classList.add('hidden');
-                
-                // Desktop Nav
-                const navBtn = document.getElementById(`nav-${t}`);
-                if (navBtn) {
-                    navBtn.className = 'nav-btn px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all';
-                    if(t === 'quiz') navBtn.classList.add('text-brand-pink');
-                }
-                
-                // Mobile Nav
-                const mobBtn = document.getElementById(`mob-nav-${t}`);
-                if (mobBtn) {
-                    mobBtn.className = 'mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-600 border border-slate-200 whitespace-nowrap shadow-sm';
-                    if(t === 'quiz') mobBtn.classList.add('text-brand-pink');
-                }
-            });
+            <div className="flex flex-col md:flex-row w-full lg:w-auto gap-3 items-center min-w-0">
+               {/* Categories - Scrollable horizontally on mobile */}
+               <div className="flex w-full lg:w-auto overflow-x-auto hide-scrollbar pb-1 snap-x justify-start md:justify-center gap-2 items-center">
+                  <button onClick={() => setActiveCategory("All")} className={`shrink-0 px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all snap-start ${activeCategory === "All" ? 'bg-slate-700 text-white shadow-md' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
+                     All
+                  </button>
+                  {Object.values(CATEGORIES).map(cat => (
+                      <button 
+                         key={cat.id} 
+                         onClick={() => setActiveCategory(cat.id)}
+                         className={`shrink-0 px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all snap-start
+                         ${activeCategory === cat.id ? `bg-slate-800 border ${cat.border} ${cat.text} shadow-[0_0_10px_rgba(255,255,255,0.05)]` : 'bg-slate-900/50 border border-transparent text-slate-500 hover:text-slate-300'}`}
+                      >
+                         <span>{cat.icon}</span> {cat.name}
+                      </button>
+                  ))}
+               </div>
 
-            // Show selected tab
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            
-            // Highlight Desktop
-            const activeNav = document.getElementById(`nav-${tabId}`);
-            if (activeNav) {
-                if(tabId === 'quiz') {
-                    activeNav.className = 'nav-btn px-5 py-2.5 rounded-xl text-sm font-bold bg-brand-pink text-white shadow-md transition-all';
-                } else {
-                    activeNav.className = 'nav-btn px-5 py-2.5 rounded-xl text-sm font-bold bg-white text-brand-purple shadow-md transition-all border-b-2 border-brand-purple';
-                }
-            }
-            
-            // Highlight Mobile
-            const activeMob = document.getElementById(`mob-nav-${tabId}`);
-            if (activeMob) {
-                if(tabId === 'quiz') {
-                    activeMob.className = 'mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-brand-pink text-white whitespace-nowrap shadow-md';
-                } else {
-                    activeMob.className = 'mob-nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-brand-purple text-white whitespace-nowrap shadow-md';
-                }
-            }
+               {/* Search */}
+               <div className="relative w-full md:w-56 shrink-0">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
+                  <input 
+                     type="text" 
+                     placeholder="ค้นหาวัสดุ..." 
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-xl pl-9 pr-4 py-1.5 md:py-2 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-xs md:text-sm"
+                  />
+               </div>
+            </div>
+          </div>
 
-            // Resize charts to prevent canvas squishing
-            if (tabId === 'compare') {
-                if (strengthChartInstance) strengthChartInstance.resize();
-                if (densityChartInstance) densityChartInstance.resize();
-            } else if (tabId === 'simulator') {
-                if (stressStrainChartInstance) stressStrainChartInstance.resize();
-            }
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function renderMaterials(data) {
-            const grid = document.getElementById('material-grid');
-            grid.innerHTML = '';
-
-            if (data.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 font-bold">ไม่พบการ์ดวัสดุ!</div>`;
-                return;
-            }
-
-            data.forEach(mat => {
-                // Calculate percentages for power bars
-                const strPct = Math.min((mat.strength / MAX_STRENGTH) * 100, 100);
-                const denPct = Math.min((mat.density / MAX_DENSITY) * 100, 100);
-                
-                const cardHtml = `
-                    <div class="bg-white rounded-3xl overflow-hidden shadow-md border-2 border-slate-100 card-hover cursor-pointer flex flex-col h-full group" onclick="openModal(${mat.id})">
-                        <!-- Top Header Color -->
-                        <div class="h-24 ${mat.bg} relative flex items-center justify-center">
-                            <div class="absolute -bottom-6 w-16 h-16 bg-white rounded-full p-1 shadow-lg">
-                                <div class="w-full h-full ${mat.bg} rounded-full flex items-center justify-center text-white text-xl">
-                                    <i class="fa-solid ${mat.icon}"></i>
-                                </div>
-                            </div>
-                            <div class="absolute top-3 right-3 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded-lg">
-                                ${mat.catName}
-                            </div>
+          {/* Inventory Grid (Scrollable) */}
+          <div className="p-3 md:p-4 overflow-y-auto custom-scrollbar flex-1 bg-slate-900/50">
+             {filteredMaterials.length === 0 ? (
+                <div className="text-center py-12 text-slate-500 text-sm">ไม่พบวัสดุที่ค้นหา</div>
+             ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-4">
+                  {filteredMaterials.map((mat) => {
+                    const styles = getCategoryStyles(mat.type);
+                    const isSelected = selectedItems.find(item => item.id === mat.id);
+                    return (
+                      <button
+                        key={mat.id}
+                        onClick={() => handleSelectItem(mat)}
+                        disabled={isSelected}
+                        className={`relative flex flex-col items-center justify-start p-2 md:p-2.5 rounded-xl border transition-all duration-300 group overflow-hidden
+                           ${isSelected 
+                              ? 'border-slate-700 bg-slate-900 opacity-40 cursor-not-allowed scale-95 grayscale' 
+                              : `border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-cyan-500 hover:-translate-y-1 hover:shadow-lg`}
+                        `}
+                      >
+                        {/* Real Image Container */}
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 mb-1.5 md:mb-2 rounded-lg overflow-hidden border border-slate-600/50 relative z-10 shadow-inner group-hover:scale-105 transition-transform bg-slate-900 shrink-0">
+                           <MaterialImage prompt={mat.id} alt={mat.name} type="material" className="w-full h-full" />
+                           {/* Small Category Badge */}
+                           <div className="absolute top-0 right-0 bg-black/70 backdrop-blur-sm text-[10px] px-1 py-0.5 rounded-bl-lg border-b border-l border-slate-600/50 z-20">
+                              {mat.icon}
+                           </div>
+                           
+                           {isSelected && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-30">
+                                 <span className="text-xl md:text-2xl drop-shadow-lg">✅</span>
+                              </div>
+                           )}
                         </div>
                         
-                        <div class="p-6 pt-10 flex-1 flex flex-col">
-                            <h3 class="font-bold text-slate-900 text-xl text-center mb-1 font-display group-hover:text-brand-purple transition-colors">${mat.name}</h3>
-                            <p class="text-xs text-slate-500 text-center mb-6 h-10 line-clamp-2 font-medium">${mat.desc}</p>
-                            
-                            <!-- Power Stats Bars -->
-                            <div class="space-y-4 mt-auto bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                <div>
-                                    <div class="flex justify-between text-xs mb-1 font-bold">
-                                        <span class="text-slate-600"><i class="fa-solid fa-dumbbell text-blue-500 w-4"></i> ความแข็งแกร่ง</span>
-                                        <span class="text-slate-800">${mat.strength}</span>
-                                    </div>
-                                    <div class="w-full bg-slate-200 rounded-full h-2">
-                                        <div class="bg-blue-500 h-2 rounded-full" style="width: ${strPct}%"></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="flex justify-between text-xs mb-1 font-bold">
-                                        <span class="text-slate-600"><i class="fa-solid fa-weight-hanging text-amber-500 w-4"></i> น้ำหนัก (ความหนาแน่น)</span>
-                                        <span class="text-slate-800">${mat.density}</span>
-                                    </div>
-                                    <div class="w-full bg-slate-200 rounded-full h-2">
-                                        <div class="bg-amber-500 h-2 rounded-full" style="width: ${denPct}%"></div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="text-[10px] md:text-xs font-bold text-slate-300 text-center leading-tight z-10 px-0.5 md:px-1 w-full truncate">
+                           {mat.name}
                         </div>
-                    </div>
-                `;
-                grid.innerHTML += cardHtml;
-            });
-        }
-
-        function filterCategory(cat) {
-            const btns = document.querySelectorAll('.cat-btn');
-            btns.forEach(btn => {
-                btn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-500 hover:bg-slate-100 transition-all border border-transparent';
-            });
-            
-            const activeBtn = document.getElementById(`cat-btn-${cat}`);
-            if(activeBtn) {
-                if(cat === 'all') activeBtn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-brand-purple text-white shadow-md transition-all';
-                if(cat === 'metal') activeBtn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-blue-500 text-white shadow-md transition-all';
-                if(cat === 'ceramic') activeBtn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-amber-500 text-white shadow-md transition-all';
-                if(cat === 'polymer') activeBtn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-emerald-500 text-white shadow-md transition-all';
-                if(cat === 'composite') activeBtn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-pink-500 text-white shadow-md transition-all';
-            }
-
-            if (cat === 'all') {
-                renderMaterials(materialsData);
-            } else {
-                renderMaterials(materialsData.filter(m => m.category === cat));
-            }
-        }
-
-        function openModal(id) {
-            const mat = materialsData.find(m => m.id === id);
-            if (!mat) return;
-
-            document.getElementById('materialModal').classList.remove('hidden');
-            // Small delay to trigger animation
-            setTimeout(() => {
-                document.getElementById('modal-card').classList.remove('scale-95', 'opacity-0');
-                document.getElementById('modal-card').classList.add('scale-100', 'opacity-100');
-            }, 10);
-
-            const content = document.getElementById('modalContent');
-            content.innerHTML = `
-                <div class="flex items-center space-x-4 mb-6">
-                    <div class="w-16 h-16 ${mat.bg} text-white rounded-2xl flex items-center justify-center text-3xl shadow-lg">
-                        <i class="fa-solid ${mat.icon}"></i>
-                    </div>
-                    <div>
-                        <span class="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-md">${mat.catName}</span>
-                        <h3 class="text-2xl font-bold text-slate-900 font-display mt-1">${mat.name}</h3>
-                    </div>
+                      </button>
+                    )
+                  })}
                 </div>
+             )}
+          </div>
+        </section>
+
+        {/* Lab Workbench Section */}
+        <section ref={workbenchRef} className="bg-slate-900 rounded-3xl shadow-2xl border border-slate-800 overflow-hidden relative">
+          
+          {/* Notification Toast */}
+          {notification && (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500/95 backdrop-blur text-white px-4 py-2 md:px-5 md:py-2.5 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.4)] z-20 animate-[slide-down_0.3s_ease-out] text-center font-medium border border-red-400 text-xs md:text-sm whitespace-nowrap max-w-[90vw] overflow-hidden text-ellipsis">
+              {notification}
+            </div>
+          )}
+
+          {/* Workbench Area */}
+          <div className="p-4 md:p-8 relative min-h-[300px] md:min-h-[350px] flex flex-col items-center justify-center">
+            {/* Background Grid Pattern */}
+            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+            
+            {/* Top right reset button */}
+            <button onClick={handleReset} className="absolute top-3 right-3 md:top-4 md:right-4 text-[10px] md:text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 px-2 py-1 md:px-3 md:py-1.5 rounded-lg transition-colors border border-slate-700 flex items-center gap-1.5 z-20 shadow-md">
+               🔄 ล้างโต๊ะผสม
+            </button>
+
+            {/* Dynamic Slots */}
+            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-5 relative z-10 w-full max-w-4xl min-h-[120px] md:min-h-[160px]">
+               {selectedItems.map((item, index) => {
+                  const styles = getCategoryStyles(item.type);
+                  return (
+                    <React.Fragment key={`slot-${index}`}>
+                       {/* Operator (+) before item, except first */}
+                       {index > 0 && (
+                          <div className="text-xl md:text-2xl font-black text-slate-600 animate-[pop-in_0.2s]">➕</div>
+                       )}
+                       
+                       {/* The Slot with Image */}
+                       <div 
+                         onClick={() => handleRemoveItem(index)}
+                         className={`w-16 h-16 sm:w-20 sm:h-20 md:w-32 md:h-32 rounded-xl md:rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-[2px] md:border-[3px] relative group animate-[pop-in_0.3s_ease-out] overflow-hidden bg-slate-800 shadow-[0_0_20px_rgba(0,0,0,0.4)] hover:shadow-red-500/30 hover:border-red-500/50`}
+                         style={{ borderColor: 'rgba(255,255,255,0.05)' }}
+                       >
+                         {/* Background Image of the selected material */}
+                         <MaterialImage prompt={item.id} alt={item.name} type="material" className="absolute inset-0 w-full h-full opacity-60 group-hover:opacity-20 transition-opacity" />
+                         
+                         {/* Label overlays */}
+                         <span className="text-xl md:text-3xl z-10 bg-black/60 p-1 md:p-1.5 rounded-full backdrop-blur-md border border-white/10 mb-0.5 md:mb-2 shadow-lg">{item.icon}</span>
+                         <span className={`text-[8px] md:text-xs font-bold text-center px-1 md:px-2 py-0.5 z-10 bg-black/70 backdrop-blur-md rounded border border-white/10 text-white shadow-lg truncate w-11/12`}>{item.name}</span>
+                         
+                         {/* Remove Overlay */}
+                         <div className="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20 backdrop-blur-sm">
+                            <span className="text-white font-bold text-[10px] md:text-sm drop-shadow-md">ออก ❌</span>
+                         </div>
+                       </div>
+                    </React.Fragment>
+                  );
+               })}
+
+               {/* Empty Slot for adding more (up to MAX) */}
+               {selectedItems.length < MAX_MIX_ITEMS && (
+                  <React.Fragment>
+                     {selectedItems.length > 0 && (
+                        <div className="text-xl md:text-2xl font-black text-slate-700">➕</div>
+                     )}
+                     <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-32 md:h-32 rounded-xl md:rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-600 bg-slate-900/50 text-slate-500 shadow-inner">
+                        <span className="text-[10px] md:text-sm font-medium">เพิ่มวัสดุ</span>
+                        <span className="text-[8px] md:text-xs mt-0.5 md:mt-1">({selectedItems.length}/{MAX_MIX_ITEMS})</span>
+                     </div>
+                  </React.Fragment>
+               )}
+            </div>
+
+            {/* Mix Button */}
+            <div className="mt-8 md:mt-12 z-10">
+              <button
+                onClick={handleMix}
+                disabled={selectedItems.length < 2 || isMixing}
+                className={`relative overflow-hidden px-6 md:px-10 py-3 md:py-3.5 rounded-2xl font-extrabold text-sm md:text-lg tracking-wide shadow-2xl transition-all duration-300 transform 
+                  ${selectedItems.length >= 2 && !isMixing
+                    ? 'bg-slate-800 text-white border border-cyan-500/50 hover:scale-105 hover:shadow-[0_0_40px_rgba(34,212,238,0.5)] group' 
+                    : 'bg-slate-900 text-slate-600 cursor-not-allowed border border-slate-800'}`}
+              >
+                {/* Active Button Background Gradient */}
+                {selectedItems.length >= 2 && !isMixing && (
+                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity"></div>
+                )}
+
+                {isMixing ? (
+                  <span className="flex items-center gap-2 md:gap-3 text-cyan-300">
+                     <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                     กำลังประมวลผล...
+                  </span>
+                ) : (
+                  <span className="relative z-10 flex items-center gap-1.5 md:gap-2">
+                     <span className="text-lg md:text-xl">✨</span> เริ่มสังเคราะห์ 
+                     <span className="bg-black/30 text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-md ml-1 shadow-inner border border-white/10">{selectedItems.length} ชนิด</span>
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+          
+          {/* Result Section */}
+          <div ref={resultRef} className="transition-all duration-500 bg-slate-950 border-t border-slate-800 relative">
+            {!isMixing && !mixResult && (
+               <div className="h-[150px] md:h-[200px] flex items-center justify-center text-slate-600 text-xs md:text-sm italic px-4 text-center">
+                  ลากหรือคลิกวัสดุด้านบน เพื่อเริ่มการทดลอง...
+               </div>
+            )}
+
+            {isMixing && (
+              <div className="h-[300px] md:h-[350px] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm z-10">
+                <div className="relative w-20 h-20 md:w-24 md:h-24">
+                   <div className="absolute inset-0 border-[4px] md:border-[6px] border-slate-800 rounded-full"></div>
+                   <div className="absolute inset-0 border-[4px] md:border-[6px] border-cyan-500 border-t-transparent border-l-transparent rounded-full animate-[spin_1s_linear_infinite]"></div>
+                   <div className="absolute inset-2 md:inset-3 border-[4px] md:border-[6px] border-fuchsia-500 border-b-transparent border-r-transparent rounded-full animate-[spin_1.5s_linear_reverse_infinite]"></div>
+                   <div className="absolute inset-0 flex items-center justify-center text-2xl md:text-3xl animate-pulse">🧬</div>
+                </div>
+                <p className="text-cyan-400 font-bold mt-4 md:mt-6 tracking-widest uppercase text-xs md:text-sm animate-pulse">Synthesizing Materials...</p>
+              </div>
+            )}
+
+            {mixResult && !isMixing && (
+              <div className={`p-5 md:p-10 w-full min-h-[300px] md:min-h-[350px] animate-[slide-up_0.5s_ease-out] bg-gradient-to-br ${mixResult.success ? 'from-cyan-950/90 to-indigo-950/90' : 'from-red-950/90 to-orange-950/90'} flex flex-col justify-center`}>
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 max-w-4xl mx-auto w-full">
+                  
+                  {/* Result Image Container (Real Image) */}
+                  <div className={`relative flex items-center justify-center w-40 h-40 md:w-64 md:h-64 rounded-2xl md:rounded-3xl shrink-0 overflow-hidden border-4
+                     ${mixResult.success ? 'border-cyan-500/40 shadow-[0_0_50px_rgba(34,212,238,0.3)]' : 'border-red-500/40 shadow-[0_0_50px_rgba(239,68,68,0.3)]'}
+                  `}>
+                    <MaterialImage 
+                       prompt={mixResult.engName || mixResult.name} 
+                       alt={mixResult.name} 
+                       type="product" 
+                       className={`w-full h-full transform hover:scale-110 transition-transform duration-700 ${!mixResult.success && 'grayscale contrast-125 brightness-75'}`} 
+                    />
+                    
+                    {mixResult.success && (
+                       <div className="absolute -top-2 -right-2 md:-top-3 md:-right-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-yellow-950 text-[10px] md:text-xs font-black px-3 py-1 md:px-4 md:py-1.5 rounded-full shadow-lg transform rotate-12 uppercase tracking-wide border border-yellow-200 z-10">
+                         สำเร็จ!
+                       </div>
+                    )}
+                  </div>
+
+                  {/* Result Details */}
+                  <div className="flex-1 text-center md:text-left w-full">
+                    <div className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 mb-4">
+                       <h3 className={`text-2xl md:text-4xl font-extrabold tracking-tight ${mixResult.success ? 'text-white' : 'text-red-400'}`}>
+                         {mixResult.name}
+                       </h3>
+                       {mixResult.success && (
+                          <span className="bg-indigo-500/20 border border-indigo-500/50 text-indigo-300 text-[10px] md:text-xs px-2.5 py-1 rounded-full font-bold shadow-inner">
+                             {mixResult.tag}
+                          </span>
+                       )}
+                    </div>
+                    
+                    <p className="text-slate-300 text-sm md:text-lg mb-5 md:mb-6 leading-relaxed bg-black/30 p-4 md:p-5 rounded-xl md:rounded-2xl border border-white/5 backdrop-blur-sm shadow-inner text-left">
+                      {mixResult.desc}
+                    </p>
+                    
+                    {mixResult.success && (
+                      <div className="flex items-start gap-3 md:gap-4 bg-cyan-900/30 p-4 md:p-5 rounded-xl md:rounded-2xl border border-cyan-500/30 shadow-lg relative overflow-hidden text-left">
+                        <div className="absolute top-0 right-0 w-24 h-24 md:w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                        <div className="text-2xl md:text-3xl mt-0.5 md:mt-1 drop-shadow-md shrink-0">🛠️</div>
+                        <div className="relative z-10">
+                           <strong className="text-cyan-400 block mb-1 text-xs md:text-sm uppercase tracking-wide">การประยุกต์ใช้งาน:</strong>
+                           <span className="text-slate-200 leading-snug block text-sm md:text-lg">{mixResult.uses}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Recommended Recipes Section */}
+        <section className="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl p-6 md:p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-3xl">💡</span>
+            <div>
+               <h2 className="text-xl font-bold text-slate-200">แนะนำสูตรวัสดุผสม (Recommended Composites)</h2>
+               <p className="text-slate-400 text-sm">ไม่รู้จะเริ่มตรงไหน? ลองคลิกเลือกสูตรยอดนิยมเหล่านี้เพื่อจัดเตรียมวัตถุดิบอัตโนมัติ</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+             {RECOMMENDED_RECIPES.map((recipeKey) => {
+                const recipeInfo = recipes[recipeKey];
+                const isDiscovered = discoveredRecipes.has(recipeKey);
                 
-                <div class="bg-blue-50 text-blue-800 p-4 rounded-2xl mb-6 font-medium text-sm border border-blue-100">
-                    💡 ${mat.desc}
-                </div>
-                
-                <h4 class="font-bold text-slate-900 text-base mb-3 font-display"><i class="fa-solid fa-chart-simple text-brand-pink mr-2"></i> สเตตัสพลัง (Stats)</h4>
-                <div class="grid grid-cols-2 gap-3 mb-6">
-                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
-                        <div class="text-slate-400 text-xs font-bold mb-1">ความหนาแน่น</div>
-                        <div class="font-bold text-slate-800 text-lg">${mat.density} <span class="text-xs">g/cm³</span></div>
-                    </div>
-                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
-                        <div class="text-slate-400 text-xs font-bold mb-1">ทนแรงดึง</div>
-                        <div class="font-bold text-slate-800 text-lg">${mat.strength} <span class="text-xs">MPa</span></div>
-                    </div>
-                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
-                        <div class="text-slate-400 text-xs font-bold mb-1">ทนความร้อน</div>
-                        <div class="font-bold text-slate-800 text-lg">${mat.temp} <span class="text-xs">°C</span></div>
-                    </div>
-                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
-                        <div class="text-slate-400 text-xs font-bold mb-1">ความยืดหยุ่น</div>
-                        <div class="font-bold text-slate-800 text-lg">${mat.modulus} <span class="text-xs">GPa</span></div>
-                    </div>
-                </div>
+                return (
+                   <div key={recipeKey} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden flex flex-col hover:border-cyan-500/50 hover:bg-slate-800 transition-all group">
+                      <div className="h-40 relative overflow-hidden bg-slate-900 border-b border-slate-700/50">
+                         <MaterialImage 
+                            prompt={recipeInfo.engName} 
+                            alt={recipeInfo.name} 
+                            type="product" 
+                            className="w-full h-full opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" 
+                         />
+                         {isDiscovered && (
+                            <div className="absolute top-3 right-3 bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg backdrop-blur-sm z-10 flex items-center gap-1">
+                               <span>✅</span> ปลดล็อกแล้ว
+                            </div>
+                         )}
+                      </div>
+                      <div className="p-4 flex flex-col flex-1">
+                         <h3 className="font-bold text-cyan-400 text-lg mb-1">{recipeInfo.name}</h3>
+                         <p className="text-xs text-slate-400 mb-4 line-clamp-2 leading-relaxed">{recipeInfo.desc}</p>
+                         <button 
+                            onClick={() => handleAutoFill(recipeKey)}
+                            className="mt-auto w-full py-2 bg-slate-700 hover:bg-cyan-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-md border border-slate-600 hover:border-cyan-400"
+                         >
+                            ลองผสมสูตรนี้ 🧪
+                         </button>
+                      </div>
+                   </div>
+                );
+             })}
+          </div>
+        </section>
 
-                <h4 class="font-bold text-slate-900 text-base mb-3 font-display"><i class="fa-solid fa-hammer text-brand-yellow mr-2"></i> นำไปสร้างอะไรดี?</h4>
-                <div class="flex flex-wrap gap-2 mb-2">
-                    ${mat.apps.map(app => `<span class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-sm font-medium"><i class="fa-solid fa-check text-emerald-500 mr-1"></i> ${app}</span>`).join('')}
-                </div>
-            `;
+      </main>
+      
+      {/* Footer / Credit */}
+      <footer className="mt-12 pb-6 text-center w-full relative z-10">
+        <p className="text-slate-400 text-sm font-medium px-4 py-2 bg-slate-900/50 inline-block rounded-full border border-slate-800/50 shadow-inner">
+          ✨ พัฒนาโดย <span className="text-cyan-400 font-bold tracking-wide">Mr.Metawat Phongsaphang</span> ✨
+        </p>
+      </footer>
+      
+      {/* Global Styles */}
+      <style dangerouslySetInnerHTML={{__html: `
+        /* Custom Scrollbar for Inventory */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        @media (min-width: 768px) {
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+          }
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(15, 23, 42, 0.5);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(51, 65, 85, 0.8);
+          border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(71, 85, 105, 1);
         }
 
-        function closeModal() {
-            document.getElementById('modal-card').classList.remove('scale-100', 'opacity-100');
-            document.getElementById('modal-card').classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                document.getElementById('materialModal').classList.add('hidden');
-            }, 300);
+        /* Hide scrollbar for categories on mobile */
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
 
-        function renderTable(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            data.forEach(mat => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
-                        <td class="p-4 font-bold text-slate-800 flex items-center space-x-3">
-                            <div class="w-8 h-8 rounded-lg ${mat.bg} text-white flex items-center justify-center text-xs"><i class="fa-solid ${mat.icon}"></i></div>
-                            <span>${mat.name}</span>
-                        </td>
-                        <td class="p-4 text-slate-600"><span class="bg-slate-100 px-2 py-1 rounded-lg text-xs font-bold">${mat.catName}</span></td>
-                        <td class="p-4 text-slate-700">${mat.density}</td>
-                        <td class="p-4 text-slate-700">${mat.strength}</td>
-                        <td class="p-4 text-slate-700">${mat.temp}°C</td>
-                    </tr>
-                `;
-            });
+        @keyframes slide-down {
+          0% { opacity: 0; transform: translate(-50%, -20px); }
+          100% { opacity: 1; transform: translate(-50%, 0); }
         }
-
-        function filterTable() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            renderTable(materialsData.filter(m => m.name.toLowerCase().includes(query) || m.catName.toLowerCase().includes(query)));
+        @keyframes slide-up {
+          0% { opacity: 0; transform: translateY(20px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
-
-        function initCharts() {
-            // Reusable chart options for playful look
-            const chartOptions = {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9', drawBorder: false }, ticks: { font: { family: 'Prompt' } } },
-                    x: { grid: { display: false }, ticks: { font: { family: 'Prompt', weight: 'bold' } } }
-                }
-            };
-
-            const labels = materialsData.map(m => m.name.split(' ')[0]); // Short names
-            const colors = materialsData.map(m => {
-                if (m.category === 'metal') return '#3b82f6';
-                if (m.category === 'ceramic') return '#f59e0b';
-                if (m.category === 'polymer') return '#10b981';
-                return '#db2777';
-            });
-
-            // Strength Chart
-            strengthChartInstance = new Chart(document.getElementById('strengthChart'), {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'ทนแรงดึง (MPa)', data: materialsData.map(m => m.strength),
-                        backgroundColor: colors, borderRadius: 8, barThickness: 20
-                    }]
-                },
-                options: chartOptions
-            });
-
-            // Density Chart
-            densityChartInstance = new Chart(document.getElementById('densityChart'), {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'ความหนาแน่น (g/cm³)', data: materialsData.map(m => m.density),
-                        backgroundColor: colors, borderRadius: 8, barThickness: 20
-                    }]
-                },
-                options: chartOptions
-            });
+        @keyframes pop-in {
+          0% { opacity: 0; transform: scale(0.5); }
+          70% { transform: scale(1.1); }
+          100% { opacity: 1; transform: scale(1); }
         }
-
-        function initSimulatorChart() {
-            stressStrainChartInstance = new Chart(document.getElementById('stressStrainChart'), {
-                type: 'line',
-                data: {
-                    labels: [0, 1, 2, 3, 4, 5],
-                    datasets: [{
-                        label: 'โลหะ', data: [0, 20, 30, 40, 45, 40],
-                        borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderWidth: 4, fill: true, tension: 0.4, pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { title: { display: true, text: 'แรงดึง (Stress)', font:{family:'Prompt', weight:'bold'} }, beginAtZero: true, max: 100 },
-                        x: { title: { display: true, text: 'ระยะที่ยืดออก (Strain)', font:{family:'Prompt', weight:'bold'} }, beginAtZero: true, max: 6 }
-                    }
-                }
-            });
-            updateSimulator(); // Set initial text
-        }
-
-        const simConfig = {
-            metal: {
-                color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.2)', width: 'w-48', label: 'โลหะ (เหนียว ยืดได้ระดับนึงก่อนขาด)',
-                data: [0, 40, 60, 75, 80, 70], maxX: 5
-            },
-            ceramic: {
-                color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.2)', width: 'w-32', label: 'เซรามิก (แข็งปั๋ง! ยืดไม่ได้ พอแรงเยอะก็ขาดผึง!)',
-                data: [0, 50, 90, null, null, null], maxX: 2
-            },
-            polymer: {
-                color: '#10b981', bg: 'rgba(16, 185, 129, 0.2)', width: 'w-72', label: 'พอลิเมอร์ (ยืดหยุ่นสูง ดึงยืดได้ยาววววววววว)',
-                data: [0, 10, 15, 20, 25, 30], maxX: 6
-            },
-            composite: {
-                color: '#ec4899', bg: 'rgba(236, 72, 153, 0.2)', width: 'w-36', label: 'วัสดุผสม (แข็งแรงมาก ทนแรงดึงได้สูงลิ่ว ยืดนิดเดียว)',
-                data: [0, 60, 100, null, null, null], maxX: 2.5
-            }
-        };
-
-        function updateSimulator() {
-            const type = document.querySelector('input[name="simMaterial"]:checked').value;
-            const conf = simConfig[type];
-            
-            // Reset Animation Element visually before play
-            const matBody = document.getElementById('sim-material-body');
-            matBody.className = `h-8 w-32 transition-all duration-1000 ease-in-out relative flex items-center justify-center overflow-hidden bg-${type==='metal'?'blue':type==='ceramic'?'amber':type==='polymer'?'emerald':'pink'}-500`;
-            matBody.innerHTML = `<div class="absolute inset-0 bg-white/20" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);"></div>`;
-            
-            document.getElementById('sim-result-text').innerText = "กดปุ่ม 'ดึง' เพื่อดูผลลัพธ์";
-            document.getElementById('sim-result-text').className = "mt-6 text-center font-bold text-xl text-slate-400 font-display";
-
-            // Update Chart Data (Empty until played, or show static?)
-            // Let's show static curve
-            stressStrainChartInstance.data.datasets[0].data = conf.data;
-            stressStrainChartInstance.data.datasets[0].borderColor = conf.color;
-            stressStrainChartInstance.data.datasets[0].backgroundColor = conf.bg;
-            stressStrainChartInstance.update();
-        }
-
-        function playSimulation() {
-            const type = document.querySelector('input[name="simMaterial"]:checked').value;
-            const conf = simConfig[type];
-            const matBody = document.getElementById('sim-material-body');
-            const resultTxt = document.getElementById('sim-result-text');
-
-            // Apply stretching CSS class based on material type
-            matBody.classList.remove('w-32');
-            matBody.classList.add(conf.width);
-            
-            if(type === 'ceramic' || type === 'composite') {
-                // Break fast
-                setTimeout(() => {
-                    matBody.innerHTML = `<div class="w-1/2 h-full bg-inherit border-r-4 border-red-500 rounded-r-lg skew-x-12"></div><div class="w-1/2 h-full bg-inherit border-l-4 border-red-500 rounded-l-lg -skew-x-12 ml-4"></div>`;
-                    resultTxt.innerText = conf.label;
-                    resultTxt.className = `mt-6 text-center font-bold text-xl text-${type==='ceramic'?'amber':'pink'}-400 font-display animate-bounce`;
-                }, 800);
-            } else {
-                // Necking and break
-                setTimeout(() => {
-                    matBody.innerHTML = `<div class="w-full h-4 bg-inherit my-auto transition-all duration-300"></div>`; // necking
-                }, 800);
-                setTimeout(() => {
-                    matBody.innerHTML = `<div class="w-1/2 h-4 bg-inherit rounded-r-full mr-2"></div><div class="w-1/2 h-4 bg-inherit rounded-l-full ml-2"></div>`;
-                    resultTxt.innerText = conf.label;
-                    resultTxt.className = `mt-6 text-center font-bold text-xl text-${type==='metal'?'blue':'emerald'}-400 font-display animate-bounce`;
-                }, 1300);
-            }
-        }
-
-        function startQuiz() {
-            document.getElementById('quiz-intro').classList.add('hidden');
-            document.getElementById('quiz-active').classList.remove('hidden');
-            currentQuestion = 0;
-            score = 0;
-            updateQuizScore();
-            loadQuestion();
-        }
-
-        function loadQuestion() {
-            const q = quizData[currentQuestion];
-            document.getElementById('quiz-progress').innerText = `ข้อ ${currentQuestion + 1} / ${quizData.length}`;
-            document.getElementById('quiz-question').innerText = q.q;
-            
-            const opts = document.getElementById('quiz-options');
-            opts.innerHTML = '';
-            q.options.forEach((opt, index) => {
-                opts.innerHTML += `
-                    <button onclick="checkAnswer(${index})" class="w-full text-left p-4 rounded-2xl border-2 border-slate-200 hover:border-brand-purple hover:bg-purple-50 font-bold text-slate-700 transition-all text-lg group">
-                        <span class="inline-block w-8 h-8 bg-slate-200 text-slate-600 rounded-full text-center leading-8 mr-3 group-hover:bg-brand-purple group-hover:text-white transition-colors">${['A','B','C','D'][index]}</span>
-                        ${opt}
-                    </button>
-                `;
-            });
-        }
-
-        function checkAnswer(selectedIndex) {
-            const q = quizData[currentQuestion];
-            if (selectedIndex === q.answer) {
-                score++;
-                updateQuizScore();
-                // Simple correct feedback
-                const opts = document.getElementById('quiz-options').children;
-                opts[selectedIndex].classList.replace('border-slate-200', 'border-emerald-500');
-                opts[selectedIndex].classList.replace('hover:bg-purple-50', 'bg-emerald-50');
-                opts[selectedIndex].classList.add('text-emerald-700');
-            } else {
-                const opts = document.getElementById('quiz-options').children;
-                opts[selectedIndex].classList.replace('border-slate-200', 'border-red-400');
-                opts[selectedIndex].classList.add('bg-red-50', 'text-red-600');
-                
-                // Highlight correct
-                opts[q.answer].classList.replace('border-slate-200', 'border-emerald-500');
-                opts[q.answer].classList.add('bg-emerald-50');
-            }
-
-            // Wait 1 second then next
-            setTimeout(() => {
-                currentQuestion++;
-                if (currentQuestion < quizData.length) {
-                    loadQuestion();
-                } else {
-                    showQuizResult();
-                }
-            }, 1200);
-        }
-
-        function updateQuizScore() {
-            document.getElementById('quiz-score').innerText = score;
-        }
-
-        function showQuizResult() {
-            document.getElementById('quiz-active').classList.add('hidden');
-            document.getElementById('quiz-result').classList.remove('hidden');
-            
-            document.getElementById('quiz-final-score').innerText = `${score} / ${quizData.length}`;
-            const feedback = document.getElementById('quiz-feedback');
-            const emoji = document.getElementById('quiz-emoji');
-            
-            if (score === 5) {
-                feedback.innerText = "อัจฉริยะ! น้องคือมาสเตอร์ด้านวัสดุศาสตร์ 🥇";
-                feedback.className = "text-xl font-bold text-brand-purple mb-8";
-                emoji.innerText = "🏆";
-            } else if (score >= 3) {
-                feedback.innerText = "เก่งมาก! พื้นฐานแน่นสุดๆ ไปทบทวนอีกนิดก็สมบูรณ์แบบ 👍";
-                feedback.className = "text-xl font-bold text-brand-pink mb-8";
-                emoji.innerText = "🎉";
-            } else {
-                feedback.innerText = "พยายามได้ดี! ลองกลับไปอ่านหน้าการ์ดวัสดุอีกรอบนะ สู้ๆ ✌️";
-                feedback.className = "text-xl font-bold text-slate-600 mb-8";
-                emoji.innerText = "📚";
-            }
-        }
-
-        function resetQuiz() {
-            document.getElementById('quiz-result').classList.add('hidden');
-            startQuiz();
-        }
-    </script>
-</body>
-</html>
+      `}} />
+    </div>
+  );
+}
